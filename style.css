@@ -499,3 +499,77 @@ button{font:inherit;color:inherit} .hidden{display:none!important}
     border:1px solid rgba(255,255,255,.12)!important;
   }
 }
+
+/* V9 — mobile scroll-first tune, safe viewport clamp, hold-to-repeat steppers */
+.tuning-panel{
+  --tune-w:min(360px,calc(100dvw - 18px));
+  --tune-h:min(390px,calc(100dvh - 18px));
+  position:fixed!important;
+  width:var(--tune-w)!important;
+  height:var(--tune-h)!important;
+  max-width:calc(100dvw - 12px)!important;
+  max-height:calc(100dvh - 12px)!important;
+  right:auto!important;
+  bottom:auto!important;
+  border-radius:16px!important;
+  overflow:hidden!important;
+}
+.tuning-scroll{
+  min-height:0!important;
+  overflow-y:scroll!important;
+  overflow-x:hidden!important;
+  touch-action:pan-y!important;
+  overscroll-behavior-y:contain!important;
+  -webkit-overflow-scrolling:touch!important;
+  scroll-snap-type:none!important;
+}
+.tuning-controls,.tune-group,.slider-list,.slider-row.compact-setting,.setting-line{
+  touch-action:pan-y!important;
+}
+.setting-slider{
+  touch-action:pan-y!important;
+}
+.value-step.is-holding{
+  background:rgba(225,29,46,.28)!important;
+  border-color:rgba(255,90,108,.55)!important;
+  transform:scale(.96);
+}
+.copy-action{font-size:7px!important;padding-inline:7px!important}
+
+/* On phones/tablets, sliders are display-only so vertical swipe can never
+   accidentally modify a value. Use holdable -/+ or the number field. */
+@media (pointer:coarse){
+  .setting-slider{pointer-events:none!important;cursor:default!important}
+  .slider-row.compact-setting{padding-block:9px!important}
+  .tuning-scroll{touch-action:pan-y!important}
+  .value-step,.value-number{touch-action:manipulation!important}
+}
+
+@media (max-width:760px) and (orientation:landscape){
+  .tuning-panel{
+    --tune-w:min(350px,calc(100dvw - 18px));
+    --tune-h:min(350px,calc(100dvh - 12px));
+  }
+}
+@media (orientation:portrait){
+  .tuning-panel{
+    --tune-w:min(360px,calc(100dvw - 16px));
+    --tune-h:min(400px,calc(100dvh - 16px));
+    right:auto!important;
+    left:8px;
+    top:64px;
+  }
+}
+
+.copy-fallback{
+  position:fixed;inset:0;z-index:99999;display:grid;place-items:center;
+  padding:16px;background:rgba(0,0,0,.72);touch-action:manipulation!important;
+}
+.copy-fallback-card{
+  width:min(92vw,520px);max-height:82dvh;padding:14px;border-radius:16px;
+  background:#0d1016;border:1px solid rgba(255,255,255,.14);box-shadow:0 24px 80px rgba(0,0,0,.6);
+}
+.copy-fallback-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.copy-fallback-head b{font-size:12px;letter-spacing:.08em}.copy-fallback-head button{width:34px;height:34px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.05);color:#fff;font-size:20px}
+.copy-fallback-card small{display:block;color:#9ca4b0;font-size:9px;line-height:1.45;margin-bottom:8px}
+.copy-fallback-card textarea{width:100%;height:min(56dvh,420px);resize:none;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:#07090d;color:#e9edf4;padding:10px;font:10px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;user-select:text!important;-webkit-user-select:text!important;touch-action:pan-y!important}

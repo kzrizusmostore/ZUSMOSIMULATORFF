@@ -33,3 +33,9 @@ Asset Naruto dan Clock Tower tidak berubah.
 - Popup TUNE dibuat lebih kotak/compact dan tetap draggable.
 - Tombol COPY menyalin seluruh tuning sebagai JSON `ZUSMO FF TUNE V8` agar bisa langsung ditempel ke chat.
 - Setting lama V7 tetap dibaca; perubahan baru disimpan ke `zusmoff_tuning_v8`.
+
+## V9 tuning fixes
+- Idle/stop arm pose now keeps a relaxed baseline instead of falling back toward the raw T-pose.
+- Mobile tuning is scroll-first: touch sliders are display-only; use the manual value or hold -/+ to adjust continuously.
+- Tuning popup is clamped to the Visual Viewport so it cannot remain cut off at the right edge.
+- COPY SETTINGS uses Clipboard API, execCommand fallback, Android share fallback, then a manual selected-text fallback.
