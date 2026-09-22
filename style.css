@@ -573,3 +573,145 @@ button{font:inherit;color:inherit} .hidden{display:none!important}
 .copy-fallback-head b{font-size:12px;letter-spacing:.08em}.copy-fallback-head button{width:34px;height:34px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.05);color:#fff;font-size:20px}
 .copy-fallback-card small{display:block;color:#9ca4b0;font-size:9px;line-height:1.45;margin-bottom:8px}
 .copy-fallback-card textarea{width:100%;height:min(56dvh,420px);resize:none;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:#07090d;color:#e9edf4;padding:10px;font:10px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;user-select:text!important;-webkit-user-select:text!important;touch-action:pan-y!important}
+
+/* V11 — compact stable tuning + button-only interaction */
+.tuning-overlay{
+  pointer-events:none!important;
+  padding:0!important;
+  background:rgba(2,3,5,.18)!important;
+  touch-action:none!important;
+}
+.tuning-panel{
+  position:fixed!important;
+  width:min(296px,calc(100dvw - 18px))!important;
+  height:min(318px,calc(100dvh - 18px))!important;
+  max-width:calc(100dvw - 12px)!important;
+  max-height:calc(100dvh - 12px)!important;
+  min-width:0!important;
+  min-height:0!important;
+  right:auto!important;
+  bottom:auto!important;
+  overflow:hidden!important;
+  border-radius:13px!important;
+  pointer-events:auto!important;
+  touch-action:none!important;
+  background:linear-gradient(160deg,rgba(17,20,27,.96),rgba(7,9,13,.94))!important;
+  border:1px solid rgba(255,255,255,.13)!important;
+  box-shadow:0 14px 42px rgba(0,0,0,.58)!important;
+}
+.tuning-panel.is-dragging{box-shadow:0 18px 52px rgba(0,0,0,.68),0 0 0 1px rgba(239,51,71,.28) inset!important}
+.tuning-head{
+  min-height:35px!important;
+  padding:5px 6px 5px 9px!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:5px!important;
+  pointer-events:none!important;
+}
+.tuning-head::after{display:none!important}
+.tuning-title-wrap,.tuning-title-wrap *,.tuning-save-state{pointer-events:none!important}
+.tuning-head h1{font-size:10px!important;margin:0!important;line-height:1!important}
+.tuning-head .eyebrow{font-size:5px!important;line-height:1!important;margin-bottom:2px!important}
+.tuning-head-actions{display:flex!important;align-items:center!important;gap:4px!important;margin-left:auto!important;pointer-events:none!important}
+.tuning-head-actions button{pointer-events:auto!important}
+.mini-head-btn{
+  height:24px;min-width:38px;padding:0 7px;border-radius:7px;border:1px solid rgba(255,255,255,.11);
+  background:rgba(255,255,255,.055);color:#dce1e8;font-size:6px;font-weight:950;letter-spacing:.08em;
+  touch-action:none!important;user-select:none!important;-webkit-user-select:none!important;
+}
+.mini-head-btn:active{background:rgba(225,29,46,.28);border-color:rgba(255,90,108,.5)}
+.tune-close{width:24px!important;height:24px!important;border-radius:7px!important;font-size:15px!important;pointer-events:auto!important;touch-action:none!important}
+.tuning-save-state{font-size:5px!important;padding:3px 4px!important}
+
+.tuning-quickbar{padding:4px 5px!important;border-top:1px solid rgba(255,255,255,.05)!important;border-bottom:1px solid rgba(255,255,255,.06)!important}
+.tuning-tabs{
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:3px!important;
+  overflow:visible!important;
+  padding:0!important;
+  touch-action:none!important;
+  scrollbar-width:none!important;
+  pointer-events:none!important;
+}
+.tuning-tab{
+  min-width:0!important;min-height:23px!important;padding:0 3px!important;border-radius:6px!important;
+  font-size:5.8px!important;letter-spacing:.045em!important;overflow:hidden;text-overflow:ellipsis;
+  pointer-events:auto!important;touch-action:none!important;
+}
+.tuning-tab.active{background:linear-gradient(135deg,rgba(225,29,46,.42),rgba(132,12,27,.32))!important;border-color:rgba(255,91,108,.42)!important;color:#fff!important}
+
+.tuning-scroll{
+  min-height:0!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  padding:5px 5px 7px!important;
+  touch-action:pan-y!important;
+  overscroll-behavior-y:contain!important;
+  -webkit-overflow-scrolling:touch!important;
+  scrollbar-width:thin!important;
+  scrollbar-color:rgba(255,255,255,.20) transparent!important;
+  pointer-events:auto!important;
+}
+.tuning-scroll::-webkit-scrollbar{width:3px!important}.tuning-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.20)!important;border-radius:99px!important}
+.tuning-controls,.tune-group,.slider-list,.slider-row.compact-setting,.setting-line,.tune-group-head,.spawn-tools,.spawn-tools-head,.spawn-live-pill{
+  pointer-events:none!important;
+  touch-action:pan-y!important;
+}
+.tune-group-head{margin:0 0 4px!important;padding:0 0 4px!important}.tune-group-head b{font-size:7px!important}.tune-group-head small{font-size:5.5px!important;line-height:1.25!important}.tune-group-head>span{display:none!important}
+.slider-list{grid-template-columns:1fr!important;gap:4px!important}
+.slider-row.compact-setting{padding:5px 6px!important;border-radius:8px!important;min-height:0!important;background:rgba(255,255,255,.025)!important}
+.setting-line{display:flex!important;align-items:center!important;gap:4px!important;margin:0!important}
+.slider-label{font-size:6.5px!important;line-height:1.1!important;flex:1!important;min-width:0!important}
+.manual-value{display:grid!important;grid-template-columns:25px 54px 18px 25px!important;gap:2px!important;align-items:center!important;pointer-events:none!important}
+.value-number{
+  width:54px!important;height:25px!important;padding:0 3px!important;border-radius:6px!important;font-size:8px!important;
+  pointer-events:auto!important;touch-action:manipulation!important;user-select:text!important;-webkit-user-select:text!important;
+}
+.value-step{
+  width:25px!important;height:25px!important;border-radius:6px!important;font-size:14px!important;
+  pointer-events:auto!important;touch-action:none!important;user-select:none!important;-webkit-user-select:none!important;
+  -webkit-touch-callout:none!important;
+}
+.value-step:active,.value-step.is-holding{background:rgba(225,29,46,.36)!important;border-color:rgba(255,95,112,.62)!important;transform:scale(.95)!important}
+.value-unit{font-size:5.5px!important;min-width:0!important;text-align:center!important;pointer-events:none!important}
+.setting-slider{height:8px!important;margin:3px 0 0!important;pointer-events:none!important;touch-action:none!important;opacity:.72!important}
+.setting-slider::before,.setting-slider-fill{height:3px!important}.setting-slider-thumb{width:8px!important;height:8px!important;border-width:2px!important}
+.auto-spawn-tools{padding:5px 6px!important;margin-top:4px!important;display:block!important}.spawn-live-pill{margin-top:4px!important;padding:4px 5px!important;font-size:5.5px!important;width:max-content!important}
+
+.tuning-footer{
+  grid-template-columns:55px 1fr 56px!important;
+  gap:4px!important;
+  padding:5px!important;
+  min-height:34px!important;
+  border-top:1px solid rgba(255,255,255,.07)!important;
+  pointer-events:none!important;
+}
+.tuning-footer button{pointer-events:auto!important;touch-action:none!important}
+.mini-action{height:24px!important;padding:0 5px!important;border-radius:6px!important;font-size:6px!important;letter-spacing:.045em!important}
+
+/* Only actual controls should capture UI touches. Labels, titles and decorative
+   content pass through to their button/scroll container instead of acting clickable. */
+button>*{pointer-events:none!important}
+.brand,.eyebrow,.tiny,.menu-meta,.panel h1,.panel h2,.setting-block>span,.setting-block p,.progress-meta,#loading-status,.select-card .status,.select-card .code,.select-card b,.select-card small{pointer-events:none!important}
+button,input,#joystick,#camera-zone{ -webkit-touch-callout:none; }
+
+@media (max-width:760px) and (orientation:landscape){
+  .tuning-panel{
+    width:min(286px,calc(100dvw - 16px))!important;
+    height:min(300px,calc(100dvh - 12px))!important;
+  }
+}
+@media (orientation:portrait){
+  .tuning-overlay{display:block!important}
+  .tuning-panel{
+    width:min(304px,calc(100dvw - 16px))!important;
+    height:min(340px,calc(100dvh - 18px))!important;
+    right:auto!important;bottom:auto!important;
+  }
+}
+.menu-shell::after{content:"V11"!important}
+/* Critical Android gesture fix: touch-action is intersected through ancestors.
+   Ancestors must allow pan-y or the scroll container cannot scroll natively. */
+.tuning-overlay,.tuning-panel{touch-action:pan-y!important}
+#btn-move-tuning,.tuning-tab,.value-step,.tune-close,.tuning-footer button{touch-action:none!important}
