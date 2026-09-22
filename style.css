@@ -18,3 +18,11 @@ button{font:inherit;color:inherit} .hidden{display:none!important}
 #camera-zone{position:absolute;left:38%;right:0;top:12%;bottom:0;pointer-events:auto}.actions{position:absolute;right:var(--safe-r);bottom:var(--safe-b);width:228px;height:150px;pointer-events:none}.action{position:absolute;width:70px;height:70px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:rgba(7,9,12,.56);backdrop-filter:blur(6px);font-size:10px;font-weight:950;pointer-events:auto}.action:active,.action.active{background:rgba(225,29,46,.5);border-color:rgba(255,87,103,.8)}#action-jump{right:0;bottom:34px}#action-crouch{right:74px;bottom:0}#action-prone{right:144px;bottom:5px}.action.run{right:116px;bottom:80px;width:62px;height:62px}.debug{position:absolute;left:var(--safe-l);top:48px;margin:0;padding:10px 12px;border-radius:10px;background:rgba(0,0,0,.62);font:11px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;color:#bdf6c8;pointer-events:none;max-width:240px;white-space:pre-wrap}
 @media (max-width:700px) and (orientation:landscape){.menu-shell{padding:24px}.brand-hero{font-size:54px;margin-bottom:20px}.panel.wide{width:96vw;padding:14px}.panel-head{margin-bottom:8px}.select-grid{gap:10px}.select-card{min-height:88px;padding:12px}.select-card b{font-size:16px;margin-top:15px}.quality-row{margin-top:10px;padding:10px}.btn.full{margin-top:10px;padding:12px}.joystick{width:118px;height:118px}.actions{transform:scale(.92);transform-origin:bottom right}}
 @media (orientation:portrait){.select-grid{grid-template-columns:1fr}.quality-row{grid-template-columns:1fr}.joystick{width:118px;height:118px}.actions{transform:scale(.9);transform-origin:bottom right}}
+
+/* Fullscreen / display controls */
+:fullscreen body,:fullscreen #game-canvas,:fullscreen #ui-root{width:100vw;height:100vh}
+:-webkit-full-screen body,:-webkit-full-screen #game-canvas,:-webkit-full-screen #ui-root{width:100vw;height:100vh}
+.fullscreen-btn{letter-spacing:.08em}
+.hud-fullscreen{margin-left:auto}
+.hud-fullscreen + #btn-exit{margin-left:0}
+@media (display-mode: fullscreen){.fullscreen-btn{display:none}}

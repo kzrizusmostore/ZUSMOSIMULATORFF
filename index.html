@@ -35,6 +35,7 @@
         <div class="menu-actions">
           <button id="btn-play" class="btn primary">PLAY</button>
           <button id="btn-settings" class="btn ghost">SETTINGS</button>
+          <button class="btn ghost fullscreen-btn" data-fullscreen>FULLSCREEN</button>
         </div>
         <div class="tiny">Naruto • Clock Tower (CT)</div>
       </div>
@@ -82,6 +83,11 @@
           </div>
           <p id="settings-quality-note">Standard uses original texture clarity and lighter rendering.</p>
         </div>
+        <div class="setting-block">
+          <span>DISPLAY</span>
+          <button class="btn ghost full fullscreen-btn" data-fullscreen>ENTER FULLSCREEN</button>
+          <p>Fullscreen hides browser chrome when Android allows it. Starting the game also requests fullscreen automatically.</p>
+        </div>
       </div>
     </section>
 
@@ -110,6 +116,7 @@
       <div class="top-hud">
         <span id="hud-map">CT</span>
         <span id="hud-quality">STANDARD</span>
+        <button class="hud-chip hud-fullscreen" data-fullscreen aria-label="Fullscreen">FULL</button>
         <button id="btn-exit" class="hud-chip">MENU</button>
       </div>
       <div id="camera-zone" aria-label="Camera drag zone"></div>
