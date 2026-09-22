@@ -65,3 +65,100 @@ button{font:inherit;color:inherit} .hidden{display:none!important}
   .select-actions{grid-template-columns:1fr}
   .slider-row{grid-template-columns:96px 1fr 54px}
 }
+
+/* V4 mobile tuning + UI refresh */
+:root{
+  --panel-2:rgba(15,18,24,.96);
+  --panel-3:rgba(8,10,14,.96);
+  --soft-red:rgba(225,29,46,.16);
+  --soft-red-2:rgba(225,29,46,.28);
+}
+.btn,.icon-btn,.select-card,.segmented button,.hud-chip,.action{touch-action:manipulation}
+.glass{border-color:rgba(255,255,255,.105);box-shadow:0 24px 70px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.035)}
+.btn{transition:transform .12s ease,filter .12s ease,border-color .12s ease,background .12s ease}
+.btn.primary{background:linear-gradient(135deg,#ef2c40 0%,#c51022 58%,#8f0917 100%);box-shadow:0 10px 26px rgba(225,29,46,.22)}
+.btn.ghost{background:linear-gradient(180deg,rgba(255,255,255,.065),rgba(255,255,255,.035))}
+.btn:active{filter:brightness(1.12)}
+.segmented{background:rgba(3,5,8,.78);border-color:rgba(255,255,255,.10);box-shadow:inset 0 1px 6px rgba(0,0,0,.35)}
+.segmented button{position:relative;transition:background .15s ease,color .15s ease,box-shadow .15s ease}
+.segmented button.active{background:linear-gradient(135deg,#e11d2e,#a70d1c);color:#fff;box-shadow:0 4px 14px rgba(225,29,46,.25),inset 0 1px 0 rgba(255,255,255,.15)}
+.quality-row{background:linear-gradient(135deg,rgba(225,29,46,.065),rgba(255,255,255,.025));border-color:rgba(225,29,46,.18)}
+.quality-row>span::before,.setting-block>span::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:#ef3347;margin-right:7px;vertical-align:1px;box-shadow:0 0 10px rgba(239,51,71,.6)}
+
+/* Make live tuning genuinely scrollable on Android. */
+.tuning-overlay{padding:8px;place-items:center;background:rgba(2,3,5,.52);touch-action:pan-y;overscroll-behavior:contain}
+.tuning-panel{
+  width:min(97vw,980px);
+  height:min(94dvh,760px);
+  max-height:94dvh;
+  overflow:hidden;
+  display:grid;
+  grid-template-rows:auto auto auto minmax(0,1fr) auto;
+  padding:0;
+  border-radius:24px;
+  background:linear-gradient(155deg,var(--panel-2),var(--panel-3));
+  touch-action:pan-y;
+}
+.tuning-head{position:relative;top:auto;margin:0;padding:16px 18px 13px;background:linear-gradient(180deg,rgba(15,18,24,.995),rgba(10,12,16,.985));border-bottom:1px solid rgba(255,255,255,.075)}
+.tuning-head h1{font-size:22px;letter-spacing:-.02em}
+.tuning-head h1 span{color:#ff5264}
+.tuning-help{margin:0;padding:10px 18px 8px;background:rgba(255,255,255,.018);border-bottom:1px solid rgba(255,255,255,.055)}
+.tuning-toolbar{padding:10px 18px 11px;display:grid;grid-template-columns:minmax(210px,330px) minmax(0,1fr);gap:10px;align-items:center;border-bottom:1px solid rgba(255,255,255,.065);background:rgba(6,8,11,.72)}
+.tune-quality{max-width:none;margin:0}
+.tune-quality.segmented.large{margin:0}
+.tune-quality.segmented.large button{padding:10px 12px;font-size:10px;letter-spacing:.08em}
+.tuning-tabs{display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;touch-action:pan-x;padding:1px 0}
+.tuning-tabs::-webkit-scrollbar{display:none}
+.tuning-tab{flex:0 0 auto;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.035);color:#969da9;border-radius:10px;padding:9px 11px;font-size:9px;font-weight:900;letter-spacing:.08em;white-space:nowrap;touch-action:manipulation}
+.tuning-tab.active{color:#fff;border-color:rgba(239,51,71,.52);background:linear-gradient(135deg,rgba(225,29,46,.52),rgba(122,8,20,.58));box-shadow:0 5px 16px rgba(225,29,46,.13)}
+.tuning-scroll{min-height:0;overflow-y:auto;overflow-x:hidden;touch-action:pan-y;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-gutter:stable;padding:12px 18px 16px}
+.tuning-scroll::-webkit-scrollbar{width:7px}
+.tuning-scroll::-webkit-scrollbar-track{background:rgba(255,255,255,.02);border-radius:9px}
+.tuning-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:9px}
+.tuning-controls{display:block;touch-action:pan-y}
+.tune-group{display:none;padding:0;border:0;background:transparent;touch-action:pan-y}
+.tune-group.active{display:block}
+.tune-group-head{padding:2px 2px 12px;margin-bottom:8px}
+.tune-group-head b{font-size:13px;letter-spacing:.13em;color:#fff}
+.tune-group-head small{max-width:680px;color:#8f96a2;font-size:11px}
+.slider-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;touch-action:pan-y}
+.slider-row{grid-template-columns:minmax(96px,1fr) minmax(120px,1.65fr) 62px;min-height:48px;padding:7px 9px;border:1px solid rgba(255,255,255,.065);border-radius:13px;background:linear-gradient(135deg,rgba(255,255,255,.036),rgba(255,255,255,.018));touch-action:pan-y}
+.slider-row:focus-within{border-color:rgba(225,29,46,.34);background:rgba(225,29,46,.045)}
+.slider-label{font-size:10px;line-height:1.25;color:#d9dce3}
+.slider-row input[type="range"]{height:32px;touch-action:pan-x;accent-color:#ef3347;cursor:ew-resize}
+.slider-row output{min-width:58px;color:#ff8491;background:rgba(225,29,46,.10);border-color:rgba(225,29,46,.20);font-size:10px;padding:6px}
+.tuning-footer{position:relative;bottom:auto;margin:0;padding:10px 18px 14px;background:linear-gradient(0deg,rgba(7,9,12,.995),rgba(10,12,16,.96));border-top:1px solid rgba(255,255,255,.07)}
+.tuning-footer .btn{padding:12px 14px}
+
+/* Quality is always visible while playing. */
+.hud-quality-switch{pointer-events:auto;margin-left:0;padding:2px;background:rgba(4,6,9,.62);backdrop-filter:blur(8px)}
+.hud-quality-switch button{padding:6px 8px;font-size:8px;letter-spacing:.08em}
+.top-hud .tune-chip{margin-left:auto;background:linear-gradient(135deg,rgba(177,16,33,.74),rgba(93,7,16,.72));border-color:rgba(255,88,105,.45)}
+#hud-quality{border-color:rgba(225,29,46,.22);background:rgba(14,8,10,.58)}
+
+@media (max-width:760px) and (orientation:landscape){
+  .tuning-overlay{padding:4px}
+  .tuning-panel{width:99vw;height:98dvh;max-height:98dvh;border-radius:18px}
+  .tuning-head{margin:0;top:auto;padding:9px 12px 8px}
+  .tuning-head h1{font-size:17px}.tuning-head .eyebrow{font-size:8px}
+  .tuning-help{padding:6px 12px;font-size:9px;line-height:1.35}
+  .tuning-toolbar{padding:6px 12px;grid-template-columns:210px minmax(0,1fr);gap:7px}
+  .tune-quality.segmented.large button{padding:7px 8px;font-size:8px}
+  .tuning-tab{padding:7px 9px;font-size:8px}
+  .tuning-scroll{padding:8px 12px 10px}
+  .slider-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+  .slider-row{grid-template-columns:84px minmax(90px,1fr) 50px;min-height:40px;padding:4px 6px;gap:5px}
+  .slider-label{font-size:9px}.slider-row output{min-width:48px;font-size:9px;padding:5px 4px}
+  .slider-row input[type="range"]{height:28px}
+  .tuning-footer{margin:0;bottom:auto;padding:6px 12px 8px}
+  .tuning-footer .btn{padding:9px 11px;font-size:10px}
+  .top-hud{gap:5px}.top-hud span,.hud-chip{padding:6px 7px;font-size:8px}.hud-quality-switch button{padding:5px 6px;font-size:7px}
+}
+@media (orientation:portrait){
+  .tuning-panel{height:96dvh;max-height:96dvh}
+  .tuning-toolbar{grid-template-columns:1fr}
+  .slider-list{grid-template-columns:1fr}
+  .slider-row{grid-template-columns:98px minmax(0,1fr) 58px}
+  .top-hud #hud-quality{display:none}
+}
+.top-hud .hud-fullscreen{margin-left:0}

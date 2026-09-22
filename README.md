@@ -1,3 +1,13 @@
+# ZUSMO FF - V2 movement/lighting/fullscreen update
+
+Changes in this build:
+- Procedural animation expanded to hips, spine, chest, neck, head, clavicles, arms, forearms, hands, upper/lower legs, ankles and toes.
+- Gait phase follows actual movement speed; added body bob, torso counter-rotation, hip motion, arm bend and softer state transitions.
+- Speed: walk 3.35 m/s, run 8.6 m/s, crouch 2.0 m/s, prone 1.05 m/s.
+- Brighter Clock Tower lighting and longer/lighter fog.
+- HD post-process color path fixed so HD no longer intentionally darkens the scene; sharpening remains 50%.
+- Fullscreen controls added in menu/settings/HUD, and START GAME requests fullscreen + landscape on supported Android browsers.
+
 # ZUSMO FF
 
 3D mobile character movement simulator built for Android browsers with Three.js.
