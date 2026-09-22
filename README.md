@@ -19,3 +19,17 @@ V6 menyederhanakan tuning supaya nyaman dipakai langsung saat gameplay di Androi
 - `src/UIManager.js`
 
 Asset Naruto dan Clock Tower tidak berubah.
+
+
+## V7 UI / Tuning
+- Rendering is permanently HD; there is no Standard/HD selector or label.
+- LIVE TUNE is a draggable floating popup.
+- Category tabs scroll horizontally; settings content scrolls vertically/horizontally.
+- Spawn X/Y/Z/Facing automatically follow the live character position and are saved per map.
+
+
+## V8 UI TUNE
+- Slider touch diganti custom intent-lock: swipe vertikal memprioritaskan scroll; nilai hanya berubah ketika gesture jelas horizontal.
+- Popup TUNE dibuat lebih kotak/compact dan tetap draggable.
+- Tombol COPY menyalin seluruh tuning sebagai JSON `ZUSMO FF TUNE V8` agar bisa langsung ditempel ke chat.
+- Setting lama V7 tetap dibaca; perubahan baru disimpan ke `zusmoff_tuning_v8`.
