@@ -12,11 +12,12 @@ export class CharacterController {
     this.forward = new THREE.Vector3();
     this.right = new THREE.Vector3();
     this.desired = new THREE.Vector3();
+    this.desiredVelocity = new THREE.Vector3();
     this.delta = new THREE.Vector3();
     this.targetQuaternion = new THREE.Quaternion();
     this.up = new THREE.Vector3(0, 1, 0);
     this.verticalVelocity = 0;
-    this.gravity = -20.5;
+    this.gravity = -22.5;
     this.grounded = true;
     this.wasGrounded = true;
     this.landTimer = 0;
@@ -41,21 +42,22 @@ export class CharacterController {
       .addScaledVector(this.right, this.input.moveX);
     if (this.desired.lengthSq() > 0.0001) this.desired.normalize();
 
-    let maxSpeed = 2.45;
-    if (this.stance === 'prone') maxSpeed = 0.68;
-    else if (this.stance === 'crouch') maxSpeed = 1.35;
-    else if (this.input.run) maxSpeed = 5.75;
+    let maxSpeed = 3.35;
+    if (this.stance === 'prone') maxSpeed = 1.05;
+    else if (this.stance === 'crouch') maxSpeed = 2.0;
+    else if (this.input.run) maxSpeed = 8.6;
     maxSpeed *= mag;
 
-    const desiredVelocity = this.desired.clone().multiplyScalar(maxSpeed);
-    const accel = desiredVelocity.lengthSq() > this.velocity.lengthSq() ? 11.5 : 15.5;
-    this.velocity.lerp(desiredVelocity, 1 - Math.exp(-accel * dt));
+    this.desiredVelocity.copy(this.desired).multiplyScalar(maxSpeed);
+    const accelerating = this.desiredVelocity.lengthSq() > this.velocity.lengthSq();
+    const accel = this.input.run ? (accelerating ? 15.5 : 18.0) : (accelerating ? 13.5 : 17.0);
+    this.velocity.lerp(this.desiredVelocity, 1 - Math.exp(-accel * dt));
     this.speed = Math.hypot(this.velocity.x, this.velocity.z);
 
     if (this.desired.lengthSq() > 0.001 && mag > 0.08) {
       const yaw = Math.atan2(this.desired.x, this.desired.z);
       this.targetQuaternion.setFromAxisAngle(this.up, yaw);
-      this.group.quaternion.slerp(this.targetQuaternion, 1 - Math.exp(-12 * dt));
+      this.group.quaternion.slerp(this.targetQuaternion, 1 - Math.exp(-15 * dt));
     }
 
     const colliderHeight = this.stance === 'prone' ? 0.48 : this.stance === 'crouch' ? 1.08 : 1.68;
@@ -66,7 +68,7 @@ export class CharacterController {
     if (this.input.consumeJump() && this.grounded && this.stance !== 'prone') {
       this.input.crouch = false;
       this.stance = 'standing';
-      this.verticalVelocity = 6.8;
+      this.verticalVelocity = 7.45;
       this.grounded = false;
     }
 
@@ -87,7 +89,7 @@ export class CharacterController {
         this.group.position.y = ground + 0.035;
         this.verticalVelocity = 0;
         this.grounded = true;
-        if (!this.wasGrounded) this.landTimer = 0.18;
+        if (!this.wasGrounded) this.landTimer = 0.20;
       }
     } else {
       this.grounded = false;
@@ -103,10 +105,10 @@ export class CharacterController {
   #selectAnimationState(inputMagnitude) {
     if (!this.grounded) this.state = this.verticalVelocity > 0.35 ? 'JUMP' : 'FALL';
     else if (this.landTimer > 0) this.state = 'LAND';
-    else if (this.stance === 'prone') this.state = this.speed > 0.08 ? 'PRONE_CRAWL' : 'PRONE_IDLE';
-    else if (this.stance === 'crouch') this.state = this.speed > 0.08 ? 'CROUCH_WALK' : 'CROUCH_IDLE';
-    else if (this.speed < 0.08 || inputMagnitude < 0.06) this.state = 'IDLE';
-    else if (this.input.run && this.speed > 3.15) this.state = 'RUN';
+    else if (this.stance === 'prone') this.state = this.speed > 0.10 ? 'PRONE_CRAWL' : 'PRONE_IDLE';
+    else if (this.stance === 'crouch') this.state = this.speed > 0.10 ? 'CROUCH_WALK' : 'CROUCH_IDLE';
+    else if (this.speed < 0.10 || inputMagnitude < 0.06) this.state = 'IDLE';
+    else if (this.input.run && this.speed > 4.15) this.state = 'RUN';
     else this.state = 'WALK';
   }
 

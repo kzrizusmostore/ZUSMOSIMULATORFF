@@ -17,11 +17,11 @@ export class Game {
     this.characters = characters;
     this.debugEnabled = new URLSearchParams(location.search).get('debug') === '1';
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x7f91a0);
-    this.scene.fog = new THREE.Fog(0x93a0aa, 120, 300);
+    this.scene.background = new THREE.Color(0xaeb9c4);
+    this.scene.fog = new THREE.Fog(0xaeb9c4, 180, 520);
     this.camera = new THREE.PerspectiveCamera(60, 1, 0.08, 520);
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-    this.renderer.setClearColor(0x7f91a0, 1);
+    this.renderer.setClearColor(0xaeb9c4, 1);
     this.clock = new THREE.Clock();
     this.assetLoader = new AssetLoader();
     this.mapManager = new MapManager(this.scene);
@@ -48,11 +48,11 @@ export class Game {
   }
 
   #createLights() {
-    this.hemi = new THREE.HemisphereLight(0xd9ebff, 0x52604c, 1.65);
+    this.hemi = new THREE.HemisphereLight(0xe8f4ff, 0x7c806f, 2.25);
     this.scene.add(this.hemi);
-    this.ambient = new THREE.AmbientLight(0xffffff, 0.28);
+    this.ambient = new THREE.AmbientLight(0xffffff, 0.62);
     this.scene.add(this.ambient);
-    this.sun = new THREE.DirectionalLight(0xfff1d8, 2.15);
+    this.sun = new THREE.DirectionalLight(0xfff4dc, 3.25);
     this.sun.position.set(24, 40, 18);
     this.sun.castShadow = true;
     this.sun.shadow.camera.near = 1;
@@ -65,6 +65,12 @@ export class Game {
     this.sun.shadow.normalBias = 0.035;
     this.scene.add(this.sun);
     this.scene.add(this.sun.target);
+
+    this.fill = new THREE.DirectionalLight(0xddeaff, 1.35);
+    this.fill.position.set(-22, 18, -26);
+    this.fill.castShadow = false;
+    this.scene.add(this.fill);
+    this.scene.add(this.fill.target);
     this.graphics.setLights([this.sun]);
   }
 
@@ -202,6 +208,11 @@ export class Game {
     this.sun.position.set(p.x + 24, p.y + 40, p.z + 18);
     this.sun.target.position.set(p.x, p.y + 0.7, p.z);
     this.sun.target.updateMatrixWorld();
+    if (this.fill) {
+      this.fill.position.set(p.x - 22, p.y + 18, p.z - 26);
+      this.fill.target.position.set(p.x, p.y + 0.8, p.z);
+      this.fill.target.updateMatrixWorld();
+    }
   }
 
   #updateDebug(dt) {

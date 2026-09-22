@@ -15,17 +15,18 @@ export class GraphicsManager {
       type: THREE.UnsignedByteType,
       depthBuffer: true
     });
-    this.target.texture.colorSpace = THREE.SRGBColorSpace;
 
     this.postScene = new THREE.Scene();
     this.postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     this.postMaterial = new THREE.ShaderMaterial({
       depthTest: false,
       depthWrite: false,
+      toneMapped: false,
       uniforms: {
         tDiffuse: { value: this.target.texture },
         uResolution: { value: new THREE.Vector2(16, 16) },
-        uStrength: { value: 0.5 }
+        uStrength: { value: 0.5 },
+        uBrightness: { value: 1.0 }
       },
       vertexShader: `
         varying vec2 vUv;
@@ -36,6 +37,7 @@ export class GraphicsManager {
         uniform sampler2D tDiffuse;
         uniform vec2 uResolution;
         uniform float uStrength;
+        uniform float uBrightness;
         varying vec2 vUv;
         void main(){
           vec2 px = 1.0 / max(uResolution, vec2(1.0));
@@ -44,10 +46,11 @@ export class GraphicsManager {
           vec3 s = texture2D(tDiffuse, vUv - vec2(0.0, px.y)).rgb;
           vec3 e = texture2D(tDiffuse, vUv + vec2(px.x, 0.0)).rgb;
           vec3 w = texture2D(tDiffuse, vUv - vec2(px.x, 0.0)).rgb;
-          float k = 0.18 * uStrength;
+          float k = 0.14 * uStrength;
           vec3 sharp = c * (1.0 + 4.0*k) - (n+s+e+w)*k;
           sharp = clamp(sharp, 0.0, 1.0);
-          gl_FragColor = vec4(mix(c, sharp, 0.82), 1.0);
+          vec3 outColor = mix(c, sharp, 0.72) * uBrightness;
+          gl_FragColor = vec4(clamp(outColor, 0.0, 1.0), 1.0);
         }
       `
     });
@@ -56,7 +59,7 @@ export class GraphicsManager {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.08;
+    this.renderer.toneMappingExposure = 1.42;
   }
 
   setLights(lights) {
@@ -77,6 +80,8 @@ export class GraphicsManager {
     this.sharpness = this.quality === 'hd' ? 0.5 : 0;
     const maxRatio = this.quality === 'hd' ? 1.5 : 1.25;
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxRatio));
+    this.renderer.toneMappingExposure = this.quality === 'hd' ? 1.52 : 1.42;
+    this.postMaterial.uniforms.uBrightness.value = this.quality === 'hd' ? 1.08 : 1.0;
     this.trackedObjects.forEach((obj) => this.#applyTextures(obj));
     this.#applyShadowQuality();
     this.resize(window.innerWidth, window.innerHeight);
@@ -84,7 +89,7 @@ export class GraphicsManager {
 
   #applyTextures(object) {
     const maxAniso = this.renderer.capabilities.getMaxAnisotropy?.() || 1;
-    const aniso = this.quality === 'hd' ? Math.min(maxAniso, 8) : 1;
+    const aniso = this.quality === 'hd' ? Math.min(maxAniso, 8) : Math.min(maxAniso, 2);
     object.traverse?.((node) => {
       if (!node.isMesh) return;
       const mats = Array.isArray(node.material) ? node.material : [node.material];

@@ -20,6 +20,7 @@ export class UIManager {
     this.#renderCards();
     this.#syncQuality();
     this.#bind();
+    this.#syncFullscreenButtons();
   }
 
   bootReady() {
@@ -71,6 +72,7 @@ export class UIManager {
     document.getElementById('hud-map').textContent = `${map.shortName} • ${map.name.toUpperCase()}`;
     document.getElementById('hud-quality').textContent = graphics === 'hd' ? 'HD • SHARP 50%' : 'STANDARD';
     this.debug.classList.toggle('hidden', !debugEnabled);
+    this.#syncFullscreenButtons();
   }
 
   hideHUD() { this.hud.classList.add('hidden'); }
@@ -82,13 +84,55 @@ export class UIManager {
     document.getElementById('btn-settings').addEventListener('click', () => this.showScreen('settings'));
     document.querySelectorAll('[data-back="menu"]').forEach((b) => b.addEventListener('click', () => this.showScreen('menu')));
     document.querySelectorAll('[data-quality]').forEach((b) => b.addEventListener('click', () => this.setQuality(b.dataset.quality)));
+    document.querySelectorAll('[data-fullscreen]').forEach((b) => b.addEventListener('click', () => this.toggleFullscreen()));
     document.getElementById('btn-start').addEventListener('click', () => {
+      this.#enterFullscreen();
       this.lastStart = this.getSelection();
       this.handlers.start?.(this.lastStart);
     });
     document.getElementById('btn-retry').addEventListener('click', () => this.handlers.start?.(this.lastStart || this.getSelection()));
     document.getElementById('btn-error-menu').addEventListener('click', () => { this.error.classList.add('hidden'); this.showScreen('menu'); });
     document.getElementById('btn-exit').addEventListener('click', () => this.handlers.exit?.());
+    document.addEventListener('fullscreenchange', () => this.#syncFullscreenButtons());
+    document.addEventListener('webkitfullscreenchange', () => this.#syncFullscreenButtons());
+  }
+
+  async toggleFullscreen() {
+    const active = document.fullscreenElement || document.webkitFullscreenElement;
+    try {
+      if (active) {
+        if (document.exitFullscreen) await document.exitFullscreen();
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+      } else {
+        await this.#enterFullscreen();
+      }
+    } catch (error) {
+      console.warn('[ZUSMO FF] Fullscreen request was blocked by the browser', error);
+    }
+    this.#syncFullscreenButtons();
+  }
+
+  async #enterFullscreen() {
+    if (document.fullscreenElement || document.webkitFullscreenElement) return true;
+    const root = document.documentElement;
+    try {
+      if (root.requestFullscreen) await root.requestFullscreen({ navigationUI: 'hide' });
+      else if (root.webkitRequestFullscreen) root.webkitRequestFullscreen();
+      else return false;
+      try { await screen.orientation?.lock?.('landscape'); } catch (_) {}
+      return true;
+    } catch (error) {
+      console.warn('[ZUSMO FF] Fullscreen unavailable', error);
+      return false;
+    }
+  }
+
+  #syncFullscreenButtons() {
+    const active = !!(document.fullscreenElement || document.webkitFullscreenElement);
+    document.querySelectorAll('.fullscreen-btn').forEach((button) => {
+      button.textContent = active ? 'EXIT FULLSCREEN' : (button.closest('#screen-menu') ? 'FULLSCREEN' : 'ENTER FULLSCREEN');
+    });
+    document.querySelectorAll('.hud-fullscreen').forEach((button) => { button.textContent = active ? 'WINDOW' : 'FULL'; });
   }
 
   setQuality(mode) {
@@ -101,8 +145,8 @@ export class UIManager {
   #syncQuality() {
     document.querySelectorAll('[data-quality]').forEach((b) => b.classList.toggle('active', b.dataset.quality === this.graphics));
     const text = this.graphics === 'hd'
-      ? 'HD: anisotropic filtering + render clarity + sharpening strength 50%.'
-      : 'Standard: performance priority, sharpening OFF.';
+      ? 'HD: brighter balanced render + anisotropic filtering + sharpening strength 50%.'
+      : 'Standard: brighter performance preset, sharpening OFF.';
     document.getElementById('quality-note').textContent = text;
     document.getElementById('settings-quality-note').textContent = text;
   }
