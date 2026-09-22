@@ -20,7 +20,14 @@ const DEFAULT_TUNING = {
     hipSway: 1.18,
     cadence: 1.00,
     blend: 1.10,
-    lean: 1.00
+    lean: 1.00,
+    idleArmDown: 1.02,
+    idleElbowBend: 0.30,
+    idleArmTwist: 0.06,
+    idleShoulderRelax: 0.10,
+    idleHandRelax: 0.12,
+    idleBreathing: 1.00,
+    idleHeadMotion: 1.00
   },
   character: {
     scale: 1.00,
@@ -32,6 +39,7 @@ const DEFAULT_TUNING = {
     landingDistance: 0.20,
     probeDistance: 7.5
   },
+  mapSpawns: {},
   graphics: {
     profiles: {
       standard: {
@@ -70,9 +78,11 @@ export class UIManager {
     this.selectedCharacter = this.#valid(localStorage.getItem('zusmoff_character'), characters) || defaults.character;
     this.graphics = ['standard', 'hd'].includes(localStorage.getItem('zusmoff_graphics')) ? localStorage.getItem('zusmoff_graphics') : defaults.graphics;
     this.tuning = this.#loadTuning();
+    this.#ensureMapSpawn(this.selectedMap);
     this.activeTuneTab = 'movement';
     this.handlers = {};
     this.lastStart = null;
+    this.saveStateTimer = null;
     this.screens = {
       menu: document.getElementById('screen-menu'),
       select: document.getElementById('screen-select'),
@@ -106,6 +116,10 @@ export class UIManager {
       graphics: this.graphics,
       tuning: this.#clone(this.tuning)
     };
+  }
+
+  getMapSpawn(mapId = this.selectedMap) {
+    return this.#clone(this.#ensureMapSpawn(mapId));
   }
 
   showScreen(name) {
@@ -162,8 +176,7 @@ export class UIManager {
   openTuning() {
     this.#renderTuningControls();
     this.tuningOverlay.classList.remove('hidden');
-    const scroller = this.tuningOverlay.querySelector('.tuning-scroll');
-    if (scroller) scroller.scrollTop = 0;
+    this.#setSaveState('LIVE');
   }
 
   closeTuning() { this.tuningOverlay.classList.add('hidden'); }
@@ -177,6 +190,10 @@ export class UIManager {
     document.querySelectorAll('[data-open-tuning]').forEach((b) => b.addEventListener('click', () => this.openTuning()));
     document.querySelectorAll('[data-close-tuning]').forEach((b) => b.addEventListener('click', () => this.closeTuning()));
     document.getElementById('btn-reset-tuning').addEventListener('click', () => this.#resetTuning());
+    document.getElementById('btn-save-tuning')?.addEventListener('click', () => {
+      this.#saveTuning();
+      this.#setSaveState('TERSIMPAN • POSISI TETAP', 1500);
+    });
     document.getElementById('btn-start').addEventListener('click', () => {
       this.#enterFullscreen();
       this.lastStart = this.getSelection();
@@ -249,6 +266,11 @@ export class UIManager {
 
   #getTuneGroups() {
     const profile = `graphics.profiles.${this.graphics}`;
+    const mapDef = this.maps.find((m) => m.id === this.selectedMap) || this.maps[0];
+    const charDef = this.characters.find((c) => c.id === this.selectedCharacter) || this.characters[0];
+    const spawn = this.#ensureMapSpawn(mapDef?.id);
+    const spawnPath = `mapSpawns.${mapDef?.id}`;
+    const range = mapDef?.spawnRange || { xMin: -250, xMax: 250, yMin: -10, yMax: 160, zMin: -250, zMax: 250 };
     return [
       {
         id: 'movement', label: 'MOVE', title: 'MOVEMENT', subtitle: 'Atur kecepatan dan rasa controller.',
@@ -280,6 +302,18 @@ export class UIManager {
         ]
       },
       {
+        id: 'idle', label: 'IDLE', title: 'IDLE / STOP POSE', subtitle: 'Atur posisi tangan dan badan saat Naruto berhenti. Nilai Arm Down 0 = kembali mendekati T-pose.',
+        controls: [
+          ['Arm Down', 'animation.idleArmDown', 0.00, 1.45, 0.01, ' rad'],
+          ['Elbow Bend', 'animation.idleElbowBend', 0.00, 0.80, 0.01, ' rad'],
+          ['Arm Twist', 'animation.idleArmTwist', -0.40, 0.40, 0.01, ' rad'],
+          ['Shoulder Relax', 'animation.idleShoulderRelax', 0.00, 0.30, 0.01, '×'],
+          ['Hand Relax', 'animation.idleHandRelax', 0.00, 0.45, 0.01, '×'],
+          ['Breathing', 'animation.idleBreathing', 0.00, 1.80, 0.01, '×'],
+          ['Head Micro Motion', 'animation.idleHeadMotion', 0.00, 1.80, 0.01, '×']
+        ]
+      },
+      {
         id: 'character', label: 'SIZE/GROUND', title: 'CHARACTER SIZE & GROUND', subtitle: 'Sesuaikan ukuran Naruto dan posisi telapak kaki terhadap permukaan map.',
         controls: [
           ['Character Size', 'character.scale', 0.70, 1.35, 0.01, '×'],
@@ -289,6 +323,17 @@ export class UIManager {
           ['Landing Snap Range', 'grounding.landingDistance', 0.05, 0.55, 0.01, ' m'],
           ['Ground Probe Depth', 'grounding.probeDistance', 3.0, 14.0, 0.25, ' m']
         ]
+      },
+      {
+        id: 'spawn', label: 'SPAWN', title: `MAP SPAWN • ${mapDef?.shortName || 'MAP'}`, subtitle: `Spawn disimpan khusus untuk ${mapDef?.name || 'map ini'}. X/Y/Z memilih lokasi; Y dipakai untuk memilih lantai/permukaan map yang paling dekat.`,
+        controls: [
+          ['Spawn X', `${spawnPath}.x`, range.xMin, range.xMax, 0.25, ' m'],
+          ['Spawn Y / Floor', `${spawnPath}.y`, range.yMin, range.yMax, 0.25, ' m'],
+          ['Spawn Z', `${spawnPath}.z`, range.zMin, range.zMax, 0.25, ' m'],
+          ['Facing', `${spawnPath}.yaw`, -180, 180, 1, '°']
+        ],
+        mapId: mapDef?.id,
+        spawn
       },
       {
         id: 'world', label: 'LIGHT', title: 'WORLD LIGHTING', subtitle: `Lighting untuk mode ${this.graphics.toUpperCase()}.`,
@@ -301,11 +346,11 @@ export class UIManager {
         ]
       },
       {
-        id: 'map', label: 'MAP', title: 'MAP FILTER', subtitle: `Filter Clock Tower untuk ${this.graphics.toUpperCase()}.`,
+        id: 'map', label: 'MAP', title: 'MAP FILTER', subtitle: `Filter ${mapDef?.name || 'map'} untuk ${this.graphics.toUpperCase()}.`,
         controls: FILTER_CONTROLS.map((c) => [c[0], `${profile}.map.${c[1]}`, ...c.slice(2)])
       },
       {
-        id: 'charfilter', label: 'NARUTO', title: 'CHARACTER FILTER', subtitle: `Filter Naruto untuk ${this.graphics.toUpperCase()}.`,
+        id: 'charfilter', label: 'CHAR', title: 'CHARACTER FILTER', subtitle: `Filter ${charDef?.name || 'character'} untuk ${this.graphics.toUpperCase()}.`,
         controls: FILTER_CONTROLS.map((c) => [c[0], `${profile}.character.${c[1]}`, ...c.slice(2)])
       }
     ];
@@ -337,6 +382,7 @@ export class UIManager {
       const group = this.#makeGroup(groupDef.title, groupDef.subtitle, groupDef.controls);
       group.dataset.tuneGroup = groupDef.id;
       group.classList.toggle('active', groupDef.id === this.activeTuneTab);
+      if (groupDef.id === 'spawn') this.#appendSpawnActions(group, groupDef.mapId);
       root.appendChild(group);
     }
 
@@ -348,30 +394,146 @@ export class UIManager {
   #makeGroup(title, subtitle, controls) {
     const group = document.createElement('section');
     group.className = 'tune-group';
-    group.innerHTML = `<div class="tune-group-head"><b>${title}</b><small>${subtitle}</small></div>`;
+    group.innerHTML = `<div class="tune-group-head"><div><b>${title}</b><small>${subtitle}</small></div><span>LIVE</span></div>`;
     const list = document.createElement('div');
     list.className = 'slider-list';
 
     for (const [label, path, min, max, step, suffix] of controls) {
-      const value = Number(this.#getByPath(this.tuning, path));
-      const row = document.createElement('label');
-      row.className = 'slider-row';
-      const displayValue = suffix === '%' ? `${Math.round(value * 100)}%` : `${this.#format(value, step)}${suffix || ''}`;
-      row.innerHTML = `<span class="slider-label">${label}</span><input type="range" min="${min}" max="${max}" step="${step}" value="${value}" data-setting-path="${path}"><output>${displayValue}</output>`;
-      const input = row.querySelector('input');
-      const output = row.querySelector('output');
-      input.addEventListener('input', () => {
-        const next = Number(input.value);
+      const initial = Number(this.#getByPath(this.tuning, path));
+      const isPercent = suffix === '%';
+      const displayScale = isPercent ? 100 : 1;
+      const displayMin = Number(min) * displayScale;
+      const displayMax = Number(max) * displayScale;
+      const displayStep = Number(step) * displayScale;
+      const displayInitial = initial * displayScale;
+      const displayDigits = displayStep < 0.01 ? 3 : displayStep < 0.1 ? 2 : displayStep < 1 ? 1 : 0;
+      const formatDisplay = (value) => Number(value).toFixed(displayDigits);
+      const row = document.createElement('div');
+      row.className = 'slider-row compact-setting';
+      row.innerHTML = `
+        <div class="setting-line">
+          <span class="slider-label">${label}</span>
+          <div class="manual-value">
+            <button type="button" class="value-step" data-dir="-1" aria-label="Decrease ${label}">−</button>
+            <input class="value-number" type="number" inputmode="decimal" min="${displayMin}" max="${displayMax}" step="${displayStep}" value="${formatDisplay(displayInitial)}" aria-label="${label} manual value">
+            <span class="value-unit">${isPercent ? '%' : (suffix || '').trim()}</span>
+            <button type="button" class="value-step" data-dir="1" aria-label="Increase ${label}">+</button>
+          </div>
+        </div>
+        <input class="setting-range" type="range" min="${min}" max="${max}" step="${step}" value="${initial}" data-setting-path="${path}" aria-label="${label}">`;
+
+      const range = row.querySelector('.setting-range');
+      const number = row.querySelector('.value-number');
+      const stepButtons = row.querySelectorAll('.value-step');
+
+      const clampInternal = (v) => Math.min(Number(max), Math.max(Number(min), v));
+      const clampDisplay = (v) => Math.min(displayMax, Math.max(displayMin, v));
+      const applyInternal = (rawInternal, source = 'range') => {
+        if (!Number.isFinite(Number(rawInternal))) return;
+        const next = clampInternal(Number(rawInternal));
         this.#setByPath(this.tuning, path, next);
-        output.textContent = suffix === '%' ? `${Math.round(next * 100)}%` : `${this.#format(next, step)}${suffix || ''}`;
+        range.value = String(next);
+        if (source !== 'number-typing') number.value = formatDisplay(next * displayScale);
         this.#saveTuning();
         this.handlers.tuning?.(this.#clone(this.tuning));
         this.updateHUDQuality(this.graphics);
+        this.#setSaveState('LIVE • TERSIMPAN', 850);
+      };
+
+      range.addEventListener('input', () => applyInternal(range.value, 'range'));
+      number.addEventListener('input', () => {
+        if (number.value === '' || number.value === '-' || number.value === '.') return;
+        const displayValue = clampDisplay(Number(number.value));
+        applyInternal(displayValue / displayScale, 'number-typing');
       });
+      number.addEventListener('change', () => {
+        const displayValue = clampDisplay(Number(number.value));
+        number.value = formatDisplay(displayValue);
+        applyInternal(displayValue / displayScale, 'number');
+      });
+      number.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') { event.preventDefault(); number.blur(); }
+      });
+      stepButtons.forEach((button) => button.addEventListener('click', () => {
+        const dir = Number(button.dataset.dir) || 0;
+        const displayValue = clampDisplay(Number(number.value || displayInitial) + dir * displayStep);
+        number.value = formatDisplay(displayValue);
+        applyInternal(displayValue / displayScale, 'step');
+      }));
       list.appendChild(row);
     }
     group.appendChild(list);
     return group;
+  }
+
+  #appendSpawnActions(group, mapId) {
+    const actions = document.createElement('div');
+    actions.className = 'spawn-tools';
+    actions.innerHTML = `
+      <div class="spawn-tools-head">
+        <b>SPAWN MAP</b>
+        <span id="spawn-live-note">Ubah angka tanpa memindahkan karakter. Pakai posisi saat ini jika sudah menemukan lokasi yang pas.</span>
+      </div>
+      <div class="spawn-actions">
+        <button type="button" class="mini-action primary" data-spawn-capture>PAKAI POSISI SAAT INI</button>
+        <button type="button" class="mini-action" data-spawn-test>TELEPORT TEST</button>
+        <button type="button" class="mini-action danger-soft" data-spawn-reset>RESET</button>
+      </div>`;
+
+    const note = actions.querySelector('#spawn-live-note');
+    actions.querySelector('[data-spawn-capture]').addEventListener('click', () => {
+      const current = this.handlers.captureSpawn?.();
+      if (!current || current.mapId !== mapId) {
+        note.textContent = 'Masuk ke map ini dulu, jalan ke lokasi yang diinginkan, lalu tekan lagi.';
+        return;
+      }
+      const spawn = this.#ensureMapSpawn(mapId);
+      spawn.x = Number(current.x.toFixed(2));
+      spawn.z = Number(current.z.toFixed(2));
+      spawn.y = Number(current.y.toFixed(2));
+      spawn.yaw = Math.round(current.yaw || 0);
+      this.#saveTuning();
+      this.handlers.tuning?.(this.#clone(this.tuning));
+      this.#renderTuningControls();
+      this.#setSaveState('SPAWN TERSIMPAN • POSISI TETAP', 1500);
+      const refreshed = document.getElementById('spawn-live-note');
+      if (refreshed) refreshed.textContent = `Tersimpan: X ${spawn.x.toFixed(2)} • Y ${spawn.y.toFixed(2)} • Z ${spawn.z.toFixed(2)} • ${spawn.yaw}°`;
+    });
+
+    actions.querySelector('[data-spawn-test]').addEventListener('click', () => {
+      const ok = this.handlers.teleportSpawn?.(mapId, this.#clone(this.#ensureMapSpawn(mapId)));
+      note.textContent = ok ? 'Teleported to saved spawn.' : 'Start this map first to test its spawn.';
+    });
+
+    actions.querySelector('[data-spawn-reset]').addEventListener('click', () => {
+      this.tuning.mapSpawns[mapId] = this.#defaultMapSpawn(mapId);
+      this.#saveTuning();
+      this.handlers.tuning?.(this.#clone(this.tuning));
+      this.#renderTuningControls();
+      const refreshed = document.getElementById('spawn-live-note');
+      if (refreshed) refreshed.textContent = 'Spawn reset to this map registry default.';
+    });
+
+    group.appendChild(actions);
+  }
+
+  #defaultMapSpawn(mapId) {
+    const def = this.maps.find((m) => m.id === mapId);
+    return {
+      x: Number(def?.spawn?.x) || 0,
+      z: Number(def?.spawn?.z) || 0,
+      y: Number(def?.spawn?.y) || 0,
+      yaw: Number(def?.spawn?.yaw) || 0
+    };
+  }
+
+  #ensureMapSpawn(mapId) {
+    if (!mapId) return { x: 0, y: 0, z: 0, yaw: 0 };
+    if (!this.tuning.mapSpawns || typeof this.tuning.mapSpawns !== 'object') this.tuning.mapSpawns = {};
+    const defaults = this.#defaultMapSpawn(mapId);
+    const saved = this.tuning.mapSpawns[mapId] || {};
+    this.tuning.mapSpawns[mapId] = { ...defaults, ...saved };
+    return this.tuning.mapSpawns[mapId];
   }
 
   #resetTuning() {
@@ -385,7 +547,8 @@ export class UIManager {
 
   #loadTuning() {
     try {
-      const saved = JSON.parse(localStorage.getItem('zusmoff_tuning_v4') || 'null');
+      const raw = localStorage.getItem('zusmoff_tuning_v6') || localStorage.getItem('zusmoff_tuning_v5') || localStorage.getItem('zusmoff_tuning_v4') || 'null';
+      const saved = JSON.parse(raw);
       return this.#deepMerge(this.#clone(DEFAULT_TUNING), saved || {});
     } catch (_) {
       return this.#clone(DEFAULT_TUNING);
@@ -393,7 +556,21 @@ export class UIManager {
   }
 
   #saveTuning() {
-    localStorage.setItem('zusmoff_tuning_v4', JSON.stringify(this.tuning));
+    localStorage.setItem('zusmoff_tuning_v6', JSON.stringify(this.tuning));
+  }
+
+  #setSaveState(message, resetAfter = 0) {
+    const el = document.getElementById('tuning-save-state');
+    if (!el) return;
+    el.textContent = message;
+    el.classList.toggle('saved', message.includes('TERSIMPAN'));
+    if (this.saveStateTimer) clearTimeout(this.saveStateTimer);
+    if (resetAfter > 0) {
+      this.saveStateTimer = setTimeout(() => {
+        el.textContent = 'LIVE';
+        el.classList.remove('saved');
+      }, resetAfter);
+    }
   }
 
   #renderCards() {
@@ -416,7 +593,13 @@ export class UIManager {
       el.className = 'select-card';
       el.innerHTML = `<span class="status">${m.available ? 'AVAILABLE' : 'LOCKED'}</span><span class="code">${m.shortName}</span><b>${m.name}</b><small>${m.shortName} • Original GLB map</small>`;
       el.disabled = !m.available;
-      el.addEventListener('click', () => { this.selectedMap = m.id; localStorage.setItem('zusmoff_map', m.id); this.#renderCards(); });
+      el.addEventListener('click', () => {
+        this.selectedMap = m.id;
+        localStorage.setItem('zusmoff_map', m.id);
+        this.#ensureMapSpawn(m.id);
+        this.#renderCards();
+        if (!this.tuningOverlay.classList.contains('hidden')) this.#renderTuningControls();
+      });
       el.classList.toggle('selected', this.selectedMap === m.id);
       mapList.appendChild(el);
     }
