@@ -7,7 +7,7 @@ export const MAPS = [
     bytes: 21806576,
     available: true,
     spawn: { x: 0, z: 0, dropHeight: 60 },
-    environment: { fogNear: 110, fogFar: 290 }
+    environment: { fogNear: 180, fogFar: 520 }
   }
 ];
 
