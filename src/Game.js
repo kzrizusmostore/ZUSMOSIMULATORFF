@@ -268,7 +268,11 @@ export class Game {
         stance: this.controller.stance,
         grounded: this.controller.grounded,
         speed: this.controller.speed,
-        scale: this.controller.characterScale
+        scale: this.controller.characterScale,
+        cameraActive: this.input.cameraPointer !== null,
+        moving: Math.hypot(this.input.moveX, this.input.moveY) > 0.06,
+        moveX: this.input.moveX,
+        moveY: this.input.moveY
       });
       this.#updateSun();
       this.ui.syncLiveSpawn?.(this.captureSpawn());
