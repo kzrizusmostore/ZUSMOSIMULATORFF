@@ -39,3 +39,17 @@ Asset Naruto dan Clock Tower tidak berubah.
 - Mobile tuning is scroll-first: touch sliders are display-only; use the manual value or hold -/+ to adjust continuously.
 - Tuning popup is clamped to the Visual Viewport so it cannot remain cut off at the right edge.
 - COPY SETTINGS uses Clipboard API, execCommand fallback, Android share fallback, then a manual selected-text fallback.
+
+## V10 Free-Fire-style locomotion rebuild
+- Only the requested copied values are adopted from the V8 tuning dump:
+  - Character scale: `0.71`
+  - Walk speed: `4.00`
+  - Run speed: `5.15`
+  - Crouch speed: `1.80`
+  - Prone speed: `0.90`
+- Old V8/V9 animation values are intentionally not migrated. This prevents zeroed idle-arm settings from restoring the source model T-pose.
+- WALK/RUN were rebuilt as phase-based gait cycles (contact/load/passing/push-off/swing), not simple sine-wave limb swings.
+- Run cadence, knee lift, bent elbows, forward lean, pelvis counter-rotation and foot roll are tied to actual movement speed.
+- JUMP, FALL and LAND now use separate airborne/landing poses.
+- CROUCH and PRONE were rebuilt with lower body posture and alternating crawl movement.
+- V10 saves tuning in `zusmoff_tuning_v10`; legacy spawn/ground/visual filter calibration is preserved, while legacy animation/movement/character values are reset to the V10 preset.
