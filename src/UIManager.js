@@ -7,27 +7,27 @@ const DEFAULT_TUNING = {
     acceleration: 14.0,
     deceleration: 18.0,
     turnSpeed: 14.0,
-    jumpPower: 4.80,
+    jumpPower: 4.20,
     gravity: 22.5
   },
   animation: {
-    intensity: 1.00,
-    walkStride: 0.86,
-    runStride: 0.90,
-    armSwing: 0.78,
-    kneeLift: 0.92,
-    bodyBob: 0.56,
-    hipSway: 0.58,
-    cadence: 0.98,
-    blend: 1.18,
-    lean: 0.72,
-    idleArmDown: 0.52,
-    idleElbowBend: 0.18,
-    idleArmTwist: 0.025,
-    idleShoulderRelax: 0.04,
-    idleHandRelax: 0.08,
-    idleBreathing: 0.58,
-    idleHeadMotion: 0.42
+    intensity: 0.96,
+    walkStride: 0.80,
+    runStride: 0.86,
+    armSwing: 0.64,
+    kneeLift: 0.94,
+    bodyBob: 0.46,
+    hipSway: 0.46,
+    cadence: 1.00,
+    blend: 1.28,
+    lean: 0.70,
+    idleArmDown: 0.36,
+    idleElbowBend: 0.10,
+    idleArmTwist: 0.015,
+    idleShoulderRelax: 0.03,
+    idleHandRelax: 0.06,
+    idleBreathing: 0.46,
+    idleHeadMotion: 0.30
   },
   character: {
     scale: 0.71,
@@ -384,7 +384,7 @@ export class UIManager {
           ['Acceleration', 'movement.acceleration', 5, 25, 0.5, ''],
           ['Deceleration', 'movement.deceleration', 5, 28, 0.5, ''],
           ['Turn Speed', 'movement.turnSpeed', 5, 24, 0.5, ''],
-          ['Jump Power', 'movement.jumpPower', 4.5, 10, 0.05, ''],
+          ['Jump Power', 'movement.jumpPower', 3.2, 8.0, 0.05, ''],
           ['Gravity', 'movement.gravity', 12, 34, 0.5, '']
         ]
       },
@@ -708,13 +708,13 @@ export class UIManager {
   async #copyTuningSettings() {
     const payload = {
       type: 'ZUSMO_FF_TUNE',
-      version: 13,
+      version: 14,
       map: this.selectedMap,
       character: this.selectedCharacter,
       graphics: 'HD_FIXED',
       tuning: this.#clone(this.tuning)
     };
-    const text = `ZUSMO FF TUNE V13\n${JSON.stringify(payload, null, 2)}`;
+    const text = `ZUSMO FF TUNE V14\n${JSON.stringify(payload, null, 2)}`;
     let copied = false;
 
     try {
@@ -849,16 +849,22 @@ export class UIManager {
 
   #loadTuning() {
     try {
-      const currentRaw = localStorage.getItem('zusmoff_tuning_v13');
+      const currentRaw = localStorage.getItem('zusmoff_tuning_v14');
       if (currentRaw) return this.#deepMerge(this.#clone(DEFAULT_TUNING), JSON.parse(currentRaw) || {});
 
-      // V13 intentionally does NOT import legacy movement/animation/character
-      // values. This prevents old idleArmDown=0 style settings from bringing
-      // the GLB back toward T-pose. Keep only non-animation world tuning that
-      // the user already calibrated (spawn, ground and visual filters).
-      const legacyRaw = localStorage.getItem('zusmoff_tuning_v11') || localStorage.getItem('zusmoff_tuning_v10') || localStorage.getItem('zusmoff_tuning_v9') || localStorage.getItem('zusmoff_tuning_v8') || localStorage.getItem('zusmoff_tuning_v7') || localStorage.getItem('zusmoff_tuning_v6') || localStorage.getItem('zusmoff_tuning_v5') || localStorage.getItem('zusmoff_tuning_v4') || 'null';
+      // V14 makes the reference-video animation the new baseline. Keep the
+      // user's chosen character size + movement speeds and world calibration,
+      // but do not import old animation amplitudes or old jump height.
+      const legacyRaw = localStorage.getItem('zusmoff_tuning_v13') || localStorage.getItem('zusmoff_tuning_v11') || localStorage.getItem('zusmoff_tuning_v10') || localStorage.getItem('zusmoff_tuning_v9') || localStorage.getItem('zusmoff_tuning_v8') || 'null';
       const legacy = JSON.parse(legacyRaw) || {};
       const next = this.#clone(DEFAULT_TUNING);
+      const mv = legacy.movement || {};
+      for (const key of ['walkSpeed','runSpeed','crouchSpeed','proneSpeed','acceleration','deceleration','turnSpeed','gravity']) {
+        if (Number.isFinite(mv[key])) next.movement[key] = mv[key];
+      }
+      const ch = legacy.character || {};
+      if (Number.isFinite(ch.scale)) next.character.scale = ch.scale;
+      if (Number.isFinite(ch.footOffset)) next.character.footOffset = ch.footOffset;
       if (legacy.mapSpawns) next.mapSpawns = this.#clone(legacy.mapSpawns);
       if (legacy.grounding) next.grounding = this.#deepMerge(next.grounding, legacy.grounding);
       if (legacy.graphics) next.graphics = this.#deepMerge(next.graphics, legacy.graphics);
@@ -869,7 +875,7 @@ export class UIManager {
   }
 
   #saveTuning() {
-    localStorage.setItem('zusmoff_tuning_v13', JSON.stringify(this.tuning));
+    localStorage.setItem('zusmoff_tuning_v14', JSON.stringify(this.tuning));
   }
 
   #setSaveState(message, resetAfter = 0) {

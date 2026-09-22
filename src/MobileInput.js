@@ -8,6 +8,10 @@ export class MobileInput {
     this.crouch = false;
     this.prone = false;
     this.jumpQueued = false;
+    this.punchQueued = 0;
+    this.punchHeld = false;
+    this.punchHoldTimer = null;
+    this.punchRepeatTimer = null;
     this.cameraDX = 0;
     this.cameraDY = 0;
     this.joystickPointer = null;
@@ -21,6 +25,7 @@ export class MobileInput {
     this.jumpButton = document.getElementById('action-jump');
     this.crouchButton = document.getElementById('action-crouch');
     this.proneButton = document.getElementById('action-prone');
+    this.punchButton = document.getElementById('action-punch');
     this.#bind();
   }
 
@@ -34,18 +39,27 @@ export class MobileInput {
     this.run = this.runButtonHeld = this.dragSprint = false;
     this.crouch = this.prone = false;
     this.jumpQueued = false;
+    this.punchQueued = 0;
+    this.#stopPunchRepeat();
     this.cameraDX = this.cameraDY = 0;
     this.joystickPointer = this.cameraPointer = null;
     this.knob.style.transform = 'translate(0px, 0px)';
     this.runButton.classList.remove('active');
     this.crouchButton.classList.remove('active');
     this.proneButton.classList.remove('active');
+    this.punchButton?.classList.remove('active');
   }
 
   consumeJump() {
     const v = this.jumpQueued;
     this.jumpQueued = false;
     return v;
+  }
+
+  consumePunch() {
+    if (this.punchQueued <= 0) return false;
+    this.punchQueued -= 1;
+    return true;
   }
 
   consumeCameraDelta() {
@@ -118,6 +132,32 @@ export class MobileInput {
       this.jumpQueued = true;
       e.preventDefault();
     });
+
+    const queuePunch = () => { this.punchQueued = Math.min(2, this.punchQueued + 1); };
+    const stopPunch = () => {
+      this.punchHeld = false;
+      this.#stopPunchRepeat();
+      this.punchButton?.classList.remove('active');
+    };
+    this.punchButton?.addEventListener('pointerdown', (e) => {
+      if (!this.enabled) return;
+      this.punchHeld = true;
+      queuePunch();
+      this.punchButton.classList.add('active');
+      this.punchButton.setPointerCapture?.(e.pointerId);
+      this.punchHoldTimer = setTimeout(() => {
+        if (!this.punchHeld) return;
+        queuePunch();
+        this.punchRepeatTimer = setInterval(() => {
+          if (this.punchHeld) queuePunch();
+        }, 330);
+      }, 260);
+      e.preventDefault();
+    });
+    this.punchButton?.addEventListener('pointerup', stopPunch);
+    this.punchButton?.addEventListener('pointercancel', stopPunch);
+    this.punchButton?.addEventListener('lostpointercapture', stopPunch);
+
     this.crouchButton.addEventListener('pointerdown', (e) => {
       if (!this.enabled) return;
       this.crouch = !this.crouch;
@@ -134,6 +174,13 @@ export class MobileInput {
       this.crouchButton.classList.toggle('active', this.crouch);
       e.preventDefault();
     });
+  }
+
+  #stopPunchRepeat() {
+    if (this.punchHoldTimer) clearTimeout(this.punchHoldTimer);
+    if (this.punchRepeatTimer) clearInterval(this.punchRepeatTimer);
+    this.punchHoldTimer = null;
+    this.punchRepeatTimer = null;
   }
 
   #updateJoystick(e) {

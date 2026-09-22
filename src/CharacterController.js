@@ -8,7 +8,7 @@ const DEFAULT_MOVEMENT = {
   acceleration: 14.0,
   deceleration: 18.0,
   turnSpeed: 14.0,
-  jumpPower: 4.80,
+  jumpPower: 4.20,
   gravity: 22.5
 };
 
@@ -131,6 +131,10 @@ export class CharacterController {
     this.delta.set(this.velocity.x * dt, 0, this.velocity.z * dt);
     this.delta.copy(this.collision.resolveHorizontal(this.group.position, this.delta, colliderHeight));
     this.group.position.add(this.delta);
+
+    if (this.input.consumePunch?.() && this.stance !== 'prone') {
+      this.animation?.triggerPunch?.();
+    }
 
     if (this.input.consumeJump() && this.grounded && this.stance !== 'prone') {
       this.input.crouch = false;
