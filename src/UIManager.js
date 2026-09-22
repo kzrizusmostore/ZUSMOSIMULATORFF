@@ -204,6 +204,8 @@ export class UIManager {
     document.addEventListener('fullscreenchange', () => this.#syncFullscreenButtons());
     document.addEventListener('webkitfullscreenchange', () => this.#syncFullscreenButtons());
     window.addEventListener('resize', () => this.#clampTunePosition());
+    window.visualViewport?.addEventListener('resize', () => this.#clampTunePosition());
+    window.visualViewport?.addEventListener('scroll', () => this.#clampTunePosition());
   }
 
   #bindTuningDrag() {
@@ -225,10 +227,14 @@ export class UIManager {
       if (!this.tuneDrag || this.tuneDrag.pointerId !== event.pointerId) return;
       const w = panel.offsetWidth;
       const h = panel.offsetHeight;
-      const maxX = Math.max(4, window.innerWidth - w - 4);
-      const maxY = Math.max(4, window.innerHeight - h - 4);
-      const x = Math.min(maxX, Math.max(4, event.clientX - this.tuneDrag.dx));
-      const y = Math.min(maxY, Math.max(4, event.clientY - this.tuneDrag.dy));
+      const vp = this.#viewportBounds();
+      const pad = 6;
+      const minX = vp.left + pad;
+      const minY = vp.top + pad;
+      const maxX = Math.max(minX, vp.left + vp.width - w - pad);
+      const maxY = Math.max(minY, vp.top + vp.height - h - pad);
+      const x = Math.min(maxX, Math.max(minX, event.clientX - this.tuneDrag.dx));
+      const y = Math.min(maxY, Math.max(minY, event.clientY - this.tuneDrag.dy));
       panel.style.left = `${x}px`;
       panel.style.top = `${y}px`;
       panel.style.right = 'auto';
@@ -238,7 +244,7 @@ export class UIManager {
     const finish = (event) => {
       if (!this.tuneDrag || this.tuneDrag.pointerId !== event.pointerId) return;
       const rect = panel.getBoundingClientRect();
-      localStorage.setItem('zusmoff_tune_position_v7', JSON.stringify({ x: Math.round(rect.left), y: Math.round(rect.top) }));
+      localStorage.setItem('zusmoff_tune_position_v9', JSON.stringify({ x: Math.round(rect.left), y: Math.round(rect.top) }));
       this.tuneDrag = null;
       panel.classList.remove('is-dragging');
       try { handle.releasePointerCapture?.(event.pointerId); } catch (_) {}
@@ -247,29 +253,53 @@ export class UIManager {
     handle.addEventListener('pointercancel', finish);
   }
 
+  #viewportBounds() {
+    const vv = window.visualViewport;
+    return {
+      left: vv?.offsetLeft || 0,
+      top: vv?.offsetTop || 0,
+      width: vv?.width || window.innerWidth,
+      height: vv?.height || window.innerHeight
+    };
+  }
+
   #applySavedTunePosition() {
     const panel = this.tuningOverlay?.querySelector('.tuning-panel');
     if (!panel) return;
+    let restored = false;
     try {
-      const pos = JSON.parse(localStorage.getItem('zusmoff_tune_position_v7') || 'null');
+      const pos = JSON.parse(localStorage.getItem('zusmoff_tune_position_v9') || 'null');
       if (pos && Number.isFinite(pos.x) && Number.isFinite(pos.y)) {
         panel.style.left = `${pos.x}px`;
         panel.style.top = `${pos.y}px`;
         panel.style.right = 'auto';
         panel.style.bottom = 'auto';
+        restored = true;
       }
     } catch (_) {}
-    requestAnimationFrame(() => this.#clampTunePosition());
+    requestAnimationFrame(() => {
+      if (!restored) {
+        const vp = this.#viewportBounds();
+        const rect = panel.getBoundingClientRect();
+        panel.style.left = `${Math.max(vp.left + 8, vp.left + vp.width - rect.width - 8)}px`;
+        panel.style.top = `${Math.max(vp.top + 8, vp.top + 54)}px`;
+      }
+      this.#clampTunePosition();
+    });
   }
 
   #clampTunePosition() {
     const panel = this.tuningOverlay?.querySelector('.tuning-panel');
     if (!panel || this.tuningOverlay.classList.contains('hidden')) return;
+    const vp = this.#viewportBounds();
     const rect = panel.getBoundingClientRect();
-    const maxX = Math.max(4, window.innerWidth - rect.width - 4);
-    const maxY = Math.max(4, window.innerHeight - rect.height - 4);
-    const x = Math.min(maxX, Math.max(4, rect.left));
-    const y = Math.min(maxY, Math.max(4, rect.top));
+    const pad = 6;
+    const minX = vp.left + pad;
+    const minY = vp.top + pad;
+    const maxX = Math.max(minX, vp.left + vp.width - rect.width - pad);
+    const maxY = Math.max(minY, vp.top + vp.height - rect.height - pad);
+    const x = Math.min(maxX, Math.max(minX, rect.left));
+    const y = Math.min(maxY, Math.max(minY, rect.top));
     panel.style.left = `${x}px`;
     panel.style.top = `${y}px`;
     panel.style.right = 'auto';
@@ -521,12 +551,38 @@ export class UIManager {
       number.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') { event.preventDefault(); number.blur(); }
       });
-      stepButtons.forEach((button) => button.addEventListener('click', () => {
-        const dir = Number(button.dataset.dir) || 0;
-        const displayValue = clampDisplay(Number(number.value || displayInitial) + dir * displayStep);
-        number.value = formatDisplay(displayValue);
-        applyInternal(displayValue / displayScale, 'step');
-      }));
+      stepButtons.forEach((button) => {
+        let holdTimer = null;
+        let repeatTimer = null;
+        const nudge = () => {
+          const dir = Number(button.dataset.dir) || 0;
+          const current = Number(number.value);
+          const base = Number.isFinite(current) ? current : displayInitial;
+          const displayValue = clampDisplay(base + dir * displayStep);
+          number.value = formatDisplay(displayValue);
+          applyInternal(displayValue / displayScale, 'step');
+        };
+        const stop = () => {
+          if (holdTimer) clearTimeout(holdTimer);
+          if (repeatTimer) clearInterval(repeatTimer);
+          holdTimer = repeatTimer = null;
+          button.classList.remove('is-holding');
+        };
+        button.addEventListener('pointerdown', (event) => {
+          if (event.pointerType === 'mouse' && event.button !== 0) return;
+          stop();
+          button.setPointerCapture?.(event.pointerId);
+          button.classList.add('is-holding');
+          nudge();
+          holdTimer = setTimeout(() => {
+            repeatTimer = setInterval(nudge, 70);
+          }, 300);
+          event.preventDefault();
+        });
+        button.addEventListener('pointerup', stop);
+        button.addEventListener('pointercancel', stop);
+        button.addEventListener('lostpointercapture', stop);
+      });
       list.appendChild(row);
     }
     group.appendChild(list);
@@ -616,33 +672,74 @@ export class UIManager {
   async #copyTuningSettings() {
     const payload = {
       type: 'ZUSMO_FF_TUNE',
-      version: 8,
+      version: 9,
       map: this.selectedMap,
       character: this.selectedCharacter,
       graphics: 'HD_FIXED',
       tuning: this.#clone(this.tuning)
     };
-    const text = `ZUSMO FF TUNE V8\n${JSON.stringify(payload, null, 2)}`;
+    const text = `ZUSMO FF TUNE V9\n${JSON.stringify(payload, null, 2)}`;
     let copied = false;
+
     try {
-      if (navigator.clipboard?.writeText) {
+      if (window.isSecureContext && navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(text);
         copied = true;
       }
-    } catch (_) {}
+    } catch (error) {
+      console.warn('[ZUSMO FF] Clipboard API failed, using fallback.', error);
+    }
+
     if (!copied) {
+      const active = document.activeElement;
       const textarea = document.createElement('textarea');
       textarea.value = text;
-      textarea.setAttribute('readonly', '');
-      textarea.style.position = 'fixed';
-      textarea.style.opacity = '0';
-      textarea.style.pointerEvents = 'none';
+      textarea.setAttribute('aria-hidden', 'true');
+      textarea.style.cssText = 'position:fixed;left:8px;top:8px;width:2px;height:2px;opacity:.01;z-index:99999;font-size:16px;';
       document.body.appendChild(textarea);
-      textarea.select();
-      try { copied = document.execCommand('copy'); } catch (_) {}
+      try {
+        textarea.focus({ preventScroll: true });
+        textarea.select();
+        textarea.setSelectionRange(0, textarea.value.length);
+        copied = document.execCommand('copy') === true;
+      } catch (error) {
+        console.warn('[ZUSMO FF] execCommand copy fallback failed.', error);
+      }
       textarea.remove();
+      try { active?.focus?.({ preventScroll: true }); } catch (_) {}
     }
-    this.#setSaveState(copied ? 'TERSALIN • KIRIM KE CHAT' : 'COPY GAGAL', 1800);
+
+    if (!copied) {
+      this.#showCopyFallback(text);
+      this.#setSaveState('PILIH + COPY MANUAL', 2200);
+      return;
+    }
+    this.#setSaveState('TERSALIN • KIRIM KE CHAT', 1800);
+  }
+
+  #showCopyFallback(text) {
+    let box = document.getElementById('tune-copy-fallback');
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'tune-copy-fallback';
+      box.className = 'copy-fallback';
+      box.innerHTML = `
+        <div class="copy-fallback-card">
+          <div class="copy-fallback-head"><b>COPY SETTINGS</b><button type="button" aria-label="Close">×</button></div>
+          <small>Clipboard browser diblokir. Teks sudah dipilih; tekan lama lalu Copy.</small>
+          <textarea spellcheck="false"></textarea>
+        </div>`;
+      document.body.appendChild(box);
+      box.querySelector('button').addEventListener('click', () => box.remove());
+      box.addEventListener('pointerdown', (event) => { if (event.target === box) box.remove(); });
+    }
+    const area = box.querySelector('textarea');
+    area.value = text;
+    requestAnimationFrame(() => {
+      area.focus();
+      area.select();
+      area.setSelectionRange(0, area.value.length);
+    });
   }
 
   #appendSpawnActions(group, mapId) {
@@ -716,7 +813,7 @@ export class UIManager {
 
   #loadTuning() {
     try {
-      const raw = localStorage.getItem('zusmoff_tuning_v8') || localStorage.getItem('zusmoff_tuning_v7') || localStorage.getItem('zusmoff_tuning_v6') || localStorage.getItem('zusmoff_tuning_v5') || localStorage.getItem('zusmoff_tuning_v4') || 'null';
+      const raw = localStorage.getItem('zusmoff_tuning_v9') || localStorage.getItem('zusmoff_tuning_v8') || localStorage.getItem('zusmoff_tuning_v7') || localStorage.getItem('zusmoff_tuning_v6') || localStorage.getItem('zusmoff_tuning_v5') || localStorage.getItem('zusmoff_tuning_v4') || 'null';
       const saved = JSON.parse(raw);
       return this.#deepMerge(this.#clone(DEFAULT_TUNING), saved || {});
     } catch (_) {
@@ -725,7 +822,7 @@ export class UIManager {
   }
 
   #saveTuning() {
-    localStorage.setItem('zusmoff_tuning_v8', JSON.stringify(this.tuning));
+    localStorage.setItem('zusmoff_tuning_v9', JSON.stringify(this.tuning));
   }
 
   #setSaveState(message, resetAfter = 0) {

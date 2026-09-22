@@ -34,7 +34,14 @@ const DEFAULT_ANIMATION = {
   hipSway: 1.18,
   cadence: 1.00,
   blend: 1.10,
-  lean: 1.00
+  lean: 1.00,
+  idleArmDown: 1.02,
+  idleElbowBend: 0.30,
+  idleArmTwist: 0.06,
+  idleShoulderRelax: 0.10,
+  idleHandRelax: 0.12,
+  idleBreathing: 1.00,
+  idleHeadMotion: 1.00
 };
 
 export class AnimationController {
@@ -155,25 +162,53 @@ export class AnimationController {
   #set(key, x = 0, y = 0, z = 0) { this.#v(key)?.set(x, y, z); }
   #setPos(key, x = 0, y = 0, z = 0) { this.#p(key)?.set(x, y, z); }
 
+  #idleArms(strength = 1, swing = 0) {
+    const S = this.settings;
+    const I = S.intensity;
+    const down = S.idleArmDown * strength;
+    const elbow = S.idleElbowBend * Math.max(0.72, strength);
+    const twist = S.idleArmTwist;
+    const shoulder = S.idleShoulderRelax * strength;
+    const hand = S.idleHandRelax;
+    this.#set('lClav', 0, 0, (0.018 + shoulder * 0.14) * I);
+    this.#set('rClav', 0, 0, (-0.018 - shoulder * 0.14) * I);
+    this.#set('lArm', 0.018 * I, -twist * I, (down + swing) * I);
+    this.#set('rArm', -0.018 * I, twist * I, (-down - swing) * I);
+    this.#set('lForeArm', 0.012 * I, 0.014 * I, -elbow * I);
+    this.#set('rForeArm', -0.012 * I, -0.014 * I, -elbow * I);
+    this.#set('lHand', 0.010 * I, hand * 0.24 * I, -hand * I);
+    this.#set('rHand', -0.010 * I, -hand * 0.24 * I, -hand * I);
+  }
+
   #idle() {
-    const I = this.settings.intensity;
+    const S = this.settings;
+    const I = S.intensity;
+    const breathAmount = S.idleBreathing;
+    const headAmount = S.idleHeadMotion;
     const breathe = Math.sin(this.time * 1.85);
     const breathe2 = Math.sin(this.time * 0.93 + 0.8);
     const micro = Math.sin(this.time * 0.57);
-    this.#setPos('hips', micro * 0.004 * I, breathe * 0.003 * I, 0);
+
+    this.#setPos('hips', micro * 0.004 * I, breathe * 0.0035 * I * breathAmount, 0);
     this.#set('hips', 0, micro * 0.014 * I, breathe2 * 0.009 * I);
-    this.#set('spine', breathe * 0.011 * I, micro * 0.014 * I, breathe * 0.026 * I);
-    this.#set('chest', -breathe * 0.009 * I, -micro * 0.018 * I, -breathe * 0.020 * I);
-    this.#set('neck', breathe2 * 0.003 * I, micro * 0.014 * I, -micro * 0.007 * I);
-    this.#set('head', breathe2 * 0.007 * I, -micro * 0.022 * I, micro * 0.011 * I);
-    this.#set('lClav', 0, 0, (0.014 + breathe * 0.012) * I);
-    this.#set('rClav', 0, 0, (-0.014 - breathe * 0.012) * I);
-    this.#set('lArm', 0.020 * I, -0.012 * I, (0.065 + breathe * 0.016) * I);
-    this.#set('rArm', -0.020 * I, 0.012 * I, (-0.065 - breathe * 0.016) * I);
-    this.#set('lForeArm', 0, 0.016 * I, -0.095 * I);
-    this.#set('rForeArm', 0, -0.016 * I, -0.095 * I);
-    this.#set('lHand', 0.012 * I, 0, -0.020 * I);
-    this.#set('rHand', -0.012 * I, 0, -0.020 * I);
+    this.#set('spine', breathe * 0.012 * I * breathAmount, micro * 0.014 * I, breathe * 0.026 * I * breathAmount);
+    this.#set('chest', -breathe * 0.010 * I * breathAmount, -micro * 0.018 * I, -breathe * 0.021 * I * breathAmount);
+    this.#set('neck', breathe2 * 0.004 * I * headAmount, micro * 0.014 * I * headAmount, -micro * 0.007 * I * headAmount);
+    this.#set('head', breathe2 * 0.008 * I * headAmount, -micro * 0.022 * I * headAmount, micro * 0.011 * I * headAmount);
+
+    // The source GLB rest pose is close to a T-pose. Always build idle on a
+    // relaxed arm baseline so stopping can never fall back to the raw rest pose.
+    this.#idleArms(1, breathe * 0.014 * breathAmount);
+    const shoulderPulse = breathe * 0.010 * I * breathAmount;
+    const lClav = this.#v('lClav');
+    const rClav = this.#v('rClav');
+    if (lClav) lClav.z += shoulderPulse;
+    if (rClav) rClav.z -= shoulderPulse;
+    const lFore = this.#v('lForeArm');
+    const rFore = this.#v('rForeArm');
+    if (lFore) lFore.z -= breathe2 * 0.012 * breathAmount * I;
+    if (rFore) rFore.z -= breathe2 * 0.012 * breathAmount * I;
+
     this.#set('lUpperLeg', 0, 0, 0.014 * I);
     this.#set('rUpperLeg', 0, 0, -0.014 * I);
   }
@@ -223,14 +258,17 @@ export class AnimationController {
     this.#set('lToe', 0, 0, -(Math.max(0, -c) * (run ? 0.18 : 0.11)) * I);
     this.#set('rToe', 0, 0, -(Math.max(0, c) * (run ? 0.18 : 0.11)) * I);
 
-    this.#set('lClav', c2 * 0.005 * I, -torsoTwist * 0.20, -s * (run ? 0.050 : 0.032) * I);
-    this.#set('rClav', -c2 * 0.005 * I, -torsoTwist * 0.20, s * (run ? 0.050 : 0.032) * I);
-    this.#set('lArm', -c * (run ? 0.026 : 0.018) * I, torsoTwist * 0.20, (-s * armAmp - (run ? 0.060 : 0.020) * I));
-    this.#set('rArm', c * (run ? 0.026 : 0.018) * I, torsoTwist * 0.20, (s * armAmp + (run ? 0.060 : 0.020) * I));
-    this.#set('lForeArm', s3 * 0.018 * I, 0.020 * I, (-0.14 - Math.max(0, s) * (run ? 0.40 : 0.24) * S.armSwing) * I);
-    this.#set('rForeArm', -s3 * 0.018 * I, -0.020 * I, (-0.14 - Math.max(0, -s) * (run ? 0.40 : 0.24) * S.armSwing) * I);
-    this.#set('lHand', c * 0.018 * I, 0, -s * 0.045 * I);
-    this.#set('rHand', -c * 0.018 * I, 0, s * 0.045 * I);
+    // Keep a relaxed baseline even during locomotion; swing is added on top.
+    const armBase = S.idleArmDown * (run ? 0.36 : 0.52);
+    const elbowBase = Math.max(0.12, S.idleElbowBend * (run ? 0.72 : 0.62));
+    this.#set('lClav', c2 * 0.005 * I, -torsoTwist * 0.20, (S.idleShoulderRelax * 0.06 - s * (run ? 0.050 : 0.032)) * I);
+    this.#set('rClav', -c2 * 0.005 * I, -torsoTwist * 0.20, (-S.idleShoulderRelax * 0.06 + s * (run ? 0.050 : 0.032)) * I);
+    this.#set('lArm', -c * (run ? 0.026 : 0.018) * I, (-S.idleArmTwist + torsoTwist * 0.20) * I, (armBase - s * armAmp) * I);
+    this.#set('rArm', c * (run ? 0.026 : 0.018) * I, (S.idleArmTwist + torsoTwist * 0.20) * I, (-armBase + s * armAmp) * I);
+    this.#set('lForeArm', s3 * 0.018 * I, 0.020 * I, (-elbowBase - Math.max(0, s) * (run ? 0.40 : 0.24) * S.armSwing) * I);
+    this.#set('rForeArm', -s3 * 0.018 * I, -0.020 * I, (-elbowBase - Math.max(0, -s) * (run ? 0.40 : 0.24) * S.armSwing) * I);
+    this.#set('lHand', c * 0.018 * I, S.idleHandRelax * 0.12 * I, (-S.idleHandRelax - s * 0.045) * I);
+    this.#set('rHand', -c * 0.018 * I, -S.idleHandRelax * 0.12 * I, (-S.idleHandRelax + s * 0.045) * I);
 
     return {
       bob: (0.5 - 0.5 * c2) * (run ? 0.043 : 0.026) * bobScale,
@@ -281,8 +319,12 @@ export class AnimationController {
     this.#set('rLeg', 0, 0, -0.74 * squash * I);
     this.#set('spine', 0, 0, 0.16 * squash * I);
     this.#set('chest', 0, 0, 0.09 * squash * I);
-    this.#set('lArm', 0, 0, 0.18 * squash * I);
-    this.#set('rArm', 0, 0, -0.18 * squash * I);
+    const landArm = this.settings.idleArmDown * 0.82;
+    const landElbow = this.settings.idleElbowBend * 0.90;
+    this.#set('lArm', 0, -this.settings.idleArmTwist * I, (landArm + 0.18 * squash) * I);
+    this.#set('rArm', 0, this.settings.idleArmTwist * I, (-landArm - 0.18 * squash) * I);
+    this.#set('lForeArm', 0, 0.01 * I, (-landElbow - 0.08 * squash) * I);
+    this.#set('rForeArm', 0, -0.01 * I, (-landElbow - 0.08 * squash) * I);
     return { yOffset: -0.08 * squash * I, tiltX: 0.025 * squash * I };
   }
 
@@ -304,10 +346,19 @@ export class AnimationController {
     this.#set('spine', 0, -s * 0.025 * I, -0.23 * I);
     this.#set('chest', 0, s * 0.040 * I, -0.06 * I);
     this.#set('head', 0, -s * 0.018 * I, 0.02 * I);
-    this.#set('lArm', 0, 0, (-s * 0.26 - 0.08) * this.settings.armSwing * I);
-    this.#set('rArm', 0, 0, (s * 0.26 + 0.08) * this.settings.armSwing * I);
-    this.#set('lForeArm', 0, 0, (-0.20 - Math.max(0, s) * 0.18) * I);
-    this.#set('rForeArm', 0, 0, (-0.20 - Math.max(0, -s) * 0.18) * I);
+    if (moving) {
+      this.#set('lArm', 0, 0, (-s * 0.26 - 0.08) * this.settings.armSwing * I);
+      this.#set('rArm', 0, 0, (s * 0.26 + 0.08) * this.settings.armSwing * I);
+      this.#set('lForeArm', 0, 0, (-0.20 - Math.max(0, s) * 0.18) * I);
+      this.#set('rForeArm', 0, 0, (-0.20 - Math.max(0, -s) * 0.18) * I);
+    } else {
+      const crouchArm = this.settings.idleArmDown * 0.72;
+      const crouchElbow = Math.max(0.28, this.settings.idleElbowBend * 1.15);
+      this.#set('lArm', 0, -this.settings.idleArmTwist * I, crouchArm * I);
+      this.#set('rArm', 0, this.settings.idleArmTwist * I, -crouchArm * I);
+      this.#set('lForeArm', 0, 0.02 * I, -crouchElbow * I);
+      this.#set('rForeArm', 0, -0.02 * I, -crouchElbow * I);
+    }
 
     return moving ? { bob: (0.5 - 0.5 * Math.cos(this.phase * 2)) * 0.020 * this.settings.bodyBob * I, rollZ: -s * 0.008 * this.settings.hipSway * I } : { bob: 0, rollZ: 0 };
   }

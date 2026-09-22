@@ -20,13 +20,14 @@ const DEFAULT_GROUNDING = {
 };
 
 export class CharacterController {
-  constructor(characterGroup, input, cameraRig, collision, animation, spawnPoint, tuning = null) {
+  constructor(characterGroup, input, cameraRig, collision, animation, spawnPoint, tuning = null, spawnYaw = 0) {
     this.group = characterGroup;
     this.input = input;
     this.cameraRig = cameraRig;
     this.collision = collision;
     this.animation = animation;
     this.spawnPoint = spawnPoint.clone();
+    this.spawnYaw = spawnYaw;
     this.velocity = new THREE.Vector3();
     this.forward = new THREE.Vector3();
     this.right = new THREE.Vector3();
@@ -56,6 +57,12 @@ export class CharacterController {
     this.characterScale = THREE.MathUtils.clamp(Number.isFinite(rawScale) ? rawScale : 1, 0.5, 1.6);
   }
 
+  setSpawn(position, yaw = this.spawnYaw, teleport = false) {
+    this.spawnPoint.copy(position);
+    this.spawnYaw = Number.isFinite(yaw) ? yaw : 0;
+    if (teleport) this.respawn();
+  }
+
   update(dt) {
     dt = Math.min(dt, 0.05);
     this.wasGrounded = this.grounded;
@@ -82,6 +89,9 @@ export class CharacterController {
     const accelerating = this.desiredVelocity.lengthSq() > this.velocity.lengthSq();
     const responsiveness = accelerating ? this.settings.acceleration : this.settings.deceleration;
     this.velocity.lerp(this.desiredVelocity, 1 - Math.exp(-responsiveness * dt));
+    // When the stick is released, kill tiny residual velocity so IDLE starts
+    // decisively instead of hovering between WALK and IDLE.
+    if (mag < 0.035 && this.velocity.lengthSq() < 0.18) this.velocity.set(0, 0, 0);
     this.speed = Math.hypot(this.velocity.x, this.velocity.z);
 
     if (this.desired.lengthSq() > 0.001 && mag > 0.08) {
@@ -141,15 +151,18 @@ export class CharacterController {
     else if (this.landTimer > 0) this.state = 'LAND';
     else if (this.stance === 'prone') this.state = this.speed > 0.10 ? 'PRONE_CRAWL' : 'PRONE_IDLE';
     else if (this.stance === 'crouch') this.state = this.speed > 0.10 ? 'CROUCH_WALK' : 'CROUCH_IDLE';
-    else if (this.speed < 0.10 || inputMagnitude < 0.06) this.state = 'IDLE';
+    else if (this.speed < 0.16 || inputMagnitude < 0.045) this.state = 'IDLE';
     else if (this.input.run && this.speed > Math.max(this.settings.walkSpeed * 1.12, 4.5)) this.state = 'RUN';
     else this.state = 'WALK';
   }
 
   respawn() {
     this.group.position.copy(this.spawnPoint);
+    this.group.quaternion.setFromAxisAngle(this.up, this.spawnYaw);
     this.velocity.set(0, 0, 0);
+    this.desiredVelocity.set(0, 0, 0);
     this.verticalVelocity = 0;
     this.grounded = true;
+    this.landTimer = 0;
   }
 }
