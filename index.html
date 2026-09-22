@@ -60,14 +60,6 @@
             <div id="map-list" class="card-list"></div>
           </div>
         </div>
-        <div class="quality-row">
-          <span>GRAPHICS</span>
-          <div class="segmented">
-            <button data-quality="standard">STANDARD</button>
-            <button data-quality="hd">HD</button>
-          </div>
-          <small id="quality-note">Standard: performance priority</small>
-        </div>
         <div class="select-actions">
           <button class="btn ghost" data-open-tuning>QUICK TUNE</button>
           <button id="btn-start" class="btn primary">START GAME</button>
@@ -80,14 +72,6 @@
         <div class="panel-head">
           <button class="icon-btn" data-back="menu" aria-label="Back">‹</button>
           <div><div class="eyebrow">ZUSMO FF</div><h1>SETTINGS</h1></div>
-        </div>
-        <div class="setting-block">
-          <span>GRAPHICS QUALITY</span>
-          <div class="segmented large">
-            <button data-quality="standard">STANDARD</button>
-            <button data-quality="hd">HD</button>
-          </div>
-          <p id="settings-quality-note">Standard uses original texture clarity and lighter rendering.</p>
         </div>
         <div class="setting-block">
           <span>ADVANCED TUNING</span>
@@ -128,7 +112,7 @@
         <div class="tuning-head">
           <div class="tuning-title-wrap">
             <div class="eyebrow">LIVE TUNE</div>
-            <h1>SETTING <span id="tuning-profile-label">STANDARD</span></h1>
+            <h1>LIVE TUNE</h1>
           </div>
           <div class="tuning-head-actions">
             <span id="tuning-save-state" class="tuning-save-state">LIVE</span>
@@ -136,10 +120,6 @@
           </div>
         </div>
         <div class="tuning-quickbar">
-          <div class="tune-quality segmented" aria-label="Graphics quality">
-            <button data-quality="standard">STD</button>
-            <button data-quality="hd">HD</button>
-          </div>
           <div id="tuning-tabs" class="tuning-tabs" aria-label="Tuning categories"></div>
         </div>
         <div class="tuning-scroll">
@@ -156,11 +136,6 @@
     <section id="hud" class="hidden">
       <div class="top-hud">
         <span id="hud-map">CT</span>
-        <span id="hud-quality">STANDARD</span>
-        <div class="hud-quality-switch segmented" aria-label="Graphics quality">
-          <button data-quality="standard">STD</button>
-          <button data-quality="hd">HD</button>
-        </div>
         <button class="hud-chip tune-chip" data-open-tuning aria-label="Tune settings">TUNE</button>
         <button class="hud-chip hud-fullscreen" data-fullscreen aria-label="Fullscreen">FULL</button>
         <button id="btn-exit" class="hud-chip">MENU</button>

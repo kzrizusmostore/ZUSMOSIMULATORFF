@@ -329,3 +329,83 @@ button{font:inherit;color:inherit} .hidden{display:none!important}
   .tuning-head{padding-left:14px}
   .tuning-scroll{padding-bottom:max(12px,env(safe-area-inset-bottom))}
 }
+
+/* V7 — permanent HD, draggable live tuning, easier 2D scrolling */
+.tuning-overlay{
+  pointer-events:none;
+  touch-action:none;
+}
+.tuning-panel{
+  position:fixed;
+  top:max(54px, env(safe-area-inset-top));
+  right:max(8px, env(safe-area-inset-right));
+  left:auto;
+  bottom:auto;
+  width:min(392px,92vw);
+  height:min(74dvh,620px);
+  max-height:calc(100dvh - 12px);
+  pointer-events:auto;
+  touch-action:pan-x pan-y;
+  border-radius:16px;
+  box-shadow:0 18px 60px rgba(0,0,0,.52),0 0 0 1px rgba(255,255,255,.025) inset;
+}
+.tuning-panel.is-dragging{box-shadow:0 22px 70px rgba(0,0,0,.62),0 0 0 1px rgba(255,92,109,.15) inset}
+.tune-drag-handle{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+.tuning-panel.is-dragging .tune-drag-handle{cursor:grabbing}
+.tuning-head::after{
+  content:"DRAG";
+  font-size:6px;
+  font-weight:900;
+  letter-spacing:.14em;
+  color:#69717d;
+  position:absolute;
+  left:50%;
+  transform:translateX(-50%);
+  bottom:3px;
+  pointer-events:none;
+}
+.tuning-head{position:relative;padding-bottom:11px}
+.tuning-quickbar{padding:6px 8px}
+.tuning-tabs{
+  overflow-x:auto;
+  overflow-y:hidden;
+  touch-action:pan-x;
+  overscroll-behavior-x:contain;
+  scroll-snap-type:x proximity;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(255,255,255,.18) transparent;
+  padding-bottom:2px;
+}
+.tuning-tabs::-webkit-scrollbar{display:block;height:3px}
+.tuning-tabs::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:99px}
+.tuning-tab{scroll-snap-align:start;flex:0 0 auto;min-width:max-content}
+.tuning-scroll{
+  overflow:auto;
+  touch-action:pan-x pan-y;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(255,255,255,.18) transparent;
+}
+.tuning-scroll::-webkit-scrollbar{width:4px;height:4px}
+.tuning-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:99px}
+.tuning-controls{min-width:285px}
+.slider-row.compact-setting{touch-action:pan-y}
+.setting-range{touch-action:pan-x}
+.auto-spawn-tools{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.auto-spawn-tools .spawn-tools-head{margin:0;min-width:0;flex:1}
+.spawn-live-pill{display:flex;align-items:center;gap:5px;flex:0 0 auto;padding:6px 8px;border-radius:999px;border:1px solid rgba(86,223,131,.20);background:rgba(86,223,131,.07);font-size:7px;font-weight:900;letter-spacing:.06em;color:#a8efbe;white-space:nowrap}
+.spawn-live-pill i{width:6px;height:6px;border-radius:50%;background:#64df8a;box-shadow:0 0 8px rgba(100,223,138,.65)}
+#screen-select .quality-row,#screen-settings [data-quality],#hud-quality,.hud-quality-switch,.tune-quality{display:none!important}
+.top-hud .tune-chip{margin-left:auto}
+
+@media (max-width:760px) and (orientation:landscape){
+  .tuning-panel{position:fixed;width:min(365px,52vw);height:min(84dvh,590px);max-height:calc(100dvh - 8px);border-radius:14px}
+  .tuning-head{padding-bottom:9px}
+  .tuning-controls{min-width:270px}
+}
+@media (orientation:portrait){
+  .tuning-overlay{display:block;padding:0}
+  .tuning-panel{position:fixed;top:max(70px,env(safe-area-inset-top));right:8px;left:auto;bottom:auto;width:min(390px,calc(100vw - 16px));height:min(62dvh,590px);max-height:calc(100dvh - 80px);border-radius:16px;border:1px solid rgba(255,255,255,.12)}
+  .tuning-controls{min-width:300px}
+}
