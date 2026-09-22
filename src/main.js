@@ -11,8 +11,10 @@ try {
   ui.setHandlers({
     start: (selection) => game.start(selection),
     exit: () => game.exitToMenu(),
-    quality: (mode) => game.setQuality(mode)
+    quality: (mode, tuning) => game.setQuality(mode, tuning),
+    tuning: (tuning) => game.setTuning(tuning)
   });
+  game.setQuality(ui.graphics, ui.getSelection().tuning);
   ui.bootReady();
   console.info('[ZUSMO FF] Engine ready');
 } catch (error) {

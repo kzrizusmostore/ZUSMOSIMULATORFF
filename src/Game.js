@@ -17,11 +17,11 @@ export class Game {
     this.characters = characters;
     this.debugEnabled = new URLSearchParams(location.search).get('debug') === '1';
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0xaeb9c4);
-    this.scene.fog = new THREE.Fog(0xaeb9c4, 180, 520);
+    this.scene.background = new THREE.Color(0x98a4ae);
+    this.scene.fog = new THREE.Fog(0x98a4ae, 180, 520);
     this.camera = new THREE.PerspectiveCamera(60, 1, 0.08, 520);
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-    this.renderer.setClearColor(0xaeb9c4, 1);
+    this.renderer.setClearColor(0x98a4ae, 1);
     this.clock = new THREE.Clock();
     this.assetLoader = new AssetLoader();
     this.mapManager = new MapManager(this.scene);
@@ -37,6 +37,7 @@ export class Game {
     this.currentMap = null;
     this.currentCharacter = null;
     this.currentGraphics = 'standard';
+    this.tuning = null;
     this.fps = 60;
     this.fpsTimer = 0;
     this.frameCount = 0;
@@ -48,11 +49,11 @@ export class Game {
   }
 
   #createLights() {
-    this.hemi = new THREE.HemisphereLight(0xe8f4ff, 0x7c806f, 2.25);
+    this.hemi = new THREE.HemisphereLight(0xe8f4ff, 0x676b61, 1.20);
     this.scene.add(this.hemi);
-    this.ambient = new THREE.AmbientLight(0xffffff, 0.62);
+    this.ambient = new THREE.AmbientLight(0xffffff, 0.25);
     this.scene.add(this.ambient);
-    this.sun = new THREE.DirectionalLight(0xfff4dc, 3.25);
+    this.sun = new THREE.DirectionalLight(0xfff4dc, 1.75);
     this.sun.position.set(24, 40, 18);
     this.sun.castShadow = true;
     this.sun.shadow.camera.near = 1;
@@ -66,7 +67,7 @@ export class Game {
     this.scene.add(this.sun);
     this.scene.add(this.sun.target);
 
-    this.fill = new THREE.DirectionalLight(0xddeaff, 1.35);
+    this.fill = new THREE.DirectionalLight(0xddeaff, 0.45);
     this.fill.position.set(-22, 18, -26);
     this.fill.castShadow = false;
     this.scene.add(this.fill);
@@ -91,7 +92,10 @@ export class Game {
     this.currentMap = mapDef;
     this.currentCharacter = charDef;
     this.currentGraphics = selection.graphics === 'hd' ? 'hd' : 'standard';
+    this.tuning = selection.tuning || this.tuning;
     this.graphics.setQuality(this.currentGraphics);
+    this.#applyTuning();
+
     const total = (mapDef.bytes || 0) + (charDef.bytes || 0);
     this.ui.showLoading(total);
     let mapLoaded = 0;
@@ -115,7 +119,7 @@ export class Game {
 
       const mapRoot = this.mapManager.install(mapDef, mapGltf);
       this.collision.setMap(mapRoot, this.mapManager.bounds);
-      this.graphics.trackObject(mapRoot);
+      this.graphics.trackObject(mapRoot, 'map');
       if (mapDef.environment) {
         this.scene.fog.near = mapDef.environment.fogNear || 120;
         this.scene.fog.far = mapDef.environment.fogFar || 300;
@@ -132,7 +136,7 @@ export class Game {
       await this.#nextFrame();
 
       const characterInfo = this.characterManager.install(charDef, charGltf);
-      this.graphics.trackObject(this.characterManager.group);
+      this.graphics.trackObject(this.characterManager.group, 'character');
       console.info('[ZUSMO FF] Naruto loaded');
       console.info(`[ZUSMO FF] Skeleton detected: ${characterInfo.skeletonCount > 0}`);
       console.info(`[ZUSMO FF] Bone count: ${characterInfo.boneCount}`);
@@ -146,16 +150,18 @@ export class Game {
       await this.#nextFrame();
       const spawn = this.collision.findSpawn(mapDef.spawn?.x || 0, mapDef.spawn?.z || 0);
       this.characterManager.spawn(spawn);
-      this.animation = new AnimationController(characterInfo, this.characterManager.baseVisualY);
+      this.animation = new AnimationController(characterInfo, this.characterManager.baseVisualY, this.tuning);
       this.controller = new CharacterController(
         this.characterManager.group,
         this.input,
         this.cameraRig,
         this.collision,
         this.animation,
-        spawn
+        spawn,
+        this.tuning
       );
       this.cameraRig.reset(spawn);
+      this.#applyTuning();
       this.ui.updateLoading(100, 'Entering World...', total, total);
       await this.#nextFrame();
       if (generation !== this.loadGeneration) return;
@@ -173,12 +179,32 @@ export class Game {
     }
   }
 
-  setQuality(mode) {
+  setQuality(mode, tuning = null) {
     this.currentGraphics = mode === 'hd' ? 'hd' : 'standard';
+    if (tuning) this.tuning = tuning;
     this.graphics.setQuality(this.currentGraphics);
-    if (this.gameActive) {
-      document.getElementById('hud-quality').textContent = this.currentGraphics === 'hd' ? 'HD • SHARP 50%' : 'STANDARD';
+    this.#applyTuning();
+    this.ui.updateHUDQuality?.(this.currentGraphics);
+  }
+
+  setTuning(tuning) {
+    this.tuning = tuning;
+    this.#applyTuning();
+  }
+
+  #applyTuning() {
+    if (!this.tuning) return;
+    const profile = this.tuning.graphics?.profiles?.[this.currentGraphics];
+    if (profile) {
+      this.graphics.setDisplayProfile(profile);
+      const light = profile.lighting || {};
+      if (Number.isFinite(light.hemisphere)) this.hemi.intensity = light.hemisphere;
+      if (Number.isFinite(light.ambient)) this.ambient.intensity = light.ambient;
+      if (Number.isFinite(light.sun)) this.sun.intensity = light.sun;
+      if (Number.isFinite(light.fill)) this.fill.intensity = light.fill;
     }
+    this.controller?.setTuning(this.tuning);
+    this.animation?.setTuning(this.tuning);
   }
 
   exitToMenu() {
@@ -187,6 +213,7 @@ export class Game {
     this.input.setEnabled(false);
     this.ui.hideHUD();
     this.ui.hideLoading();
+    this.ui.closeTuning?.();
     this.ui.showScreen('menu');
   }
 
@@ -225,14 +252,17 @@ export class Game {
     }
     if (!this.debugEnabled) return;
     const c = this.controller;
+    const profile = this.tuning?.graphics?.profiles?.[this.currentGraphics];
     this.ui.updateDebug(
 `FPS: ${this.fps}
 Map: ${this.currentMap?.name} (${this.currentMap?.shortName})
 Character: ${this.currentCharacter?.name}
 Quality: ${this.currentGraphics.toUpperCase()}
-Sharpen: ${this.currentGraphics === 'hd' ? '50%' : 'OFF'}
+Map Sharp: ${Math.round((profile?.map?.sharpness || 0) * 100)}%
+Char Sharp: ${Math.round((profile?.character?.sharpness || 0) * 100)}%
 State: ${c.state}
 Speed: ${c.speed.toFixed(2)} m/s
+Walk / Run: ${c.settings.walkSpeed.toFixed(1)} / ${c.settings.runSpeed.toFixed(1)} m/s
 Grounded: ${c.grounded}
 Bones: ${this.characterManager.bones.size}
 Clips: ${this.characterManager.animations.length}`

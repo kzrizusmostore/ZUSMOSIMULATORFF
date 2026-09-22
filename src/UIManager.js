@@ -1,3 +1,90 @@
+const DEFAULT_TUNING = {
+  movement: {
+    walkSpeed: 4.2,
+    runSpeed: 6.8,
+    crouchSpeed: 1.8,
+    proneSpeed: 0.9,
+    acceleration: 14.0,
+    deceleration: 18.0,
+    turnSpeed: 14.0,
+    jumpPower: 7.25,
+    gravity: 22.5
+  },
+  animation: {
+    intensity: 1.16,
+    walkStride: 1.18,
+    runStride: 1.00,
+    armSwing: 1.12,
+    kneeLift: 1.16,
+    bodyBob: 0.92,
+    hipSway: 1.18,
+    cadence: 1.00,
+    blend: 1.10,
+    lean: 1.00
+  },
+  graphics: {
+    profiles: {
+      standard: {
+        exposure: 1.05,
+        lighting: { hemisphere: 1.20, ambient: 0.25, sun: 1.75, fill: 0.45 },
+        map: { brightness: 0.94, contrast: 1.03, saturation: 1.00, sharpness: 0.00, shadows: 0.02, highlights: -0.07, gamma: 1.00, warmth: 0.00 },
+        character: { brightness: 1.02, contrast: 1.04, saturation: 1.04, sharpness: 0.00, shadows: 0.05, highlights: -0.01, gamma: 1.00, warmth: 0.02 }
+      },
+      hd: {
+        exposure: 1.18,
+        lighting: { hemisphere: 1.35, ambient: 0.32, sun: 1.95, fill: 0.58 },
+        map: { brightness: 1.06, contrast: 1.05, saturation: 1.05, sharpness: 0.50, shadows: 0.08, highlights: 0.01, gamma: 1.02, warmth: 0.00 },
+        character: { brightness: 1.08, contrast: 1.06, saturation: 1.08, sharpness: 0.50, shadows: 0.10, highlights: 0.02, gamma: 1.02, warmth: 0.03 }
+      }
+    }
+  }
+};
+
+const CONTROL_GROUPS = [
+  {
+    title: 'MOVEMENT',
+    subtitle: 'Atur rasa controller dan kecepatan karakter.',
+    controls: [
+      ['Walk Speed', 'movement.walkSpeed', 2.5, 6.0, 0.05, ' m/s'],
+      ['Run Speed', 'movement.runSpeed', 4.5, 9.0, 0.05, ' m/s'],
+      ['Crouch Speed', 'movement.crouchSpeed', 0.6, 3.0, 0.05, ' m/s'],
+      ['Prone Speed', 'movement.proneSpeed', 0.3, 1.6, 0.05, ' m/s'],
+      ['Acceleration', 'movement.acceleration', 5, 25, 0.5, ''],
+      ['Deceleration', 'movement.deceleration', 5, 28, 0.5, ''],
+      ['Turn Speed', 'movement.turnSpeed', 5, 24, 0.5, ''],
+      ['Jump Power', 'movement.jumpPower', 4.5, 10, 0.05, ''],
+      ['Gravity', 'movement.gravity', 12, 34, 0.5, '']
+    ]
+  },
+  {
+    title: 'ANIMATION',
+    subtitle: 'Naik-turunkan gerak badan tanpa mengganti skeleton Naruto.',
+    controls: [
+      ['Motion Intensity', 'animation.intensity', 0.55, 1.70, 0.01, '×'],
+      ['Walk Stride', 'animation.walkStride', 0.55, 1.65, 0.01, '×'],
+      ['Run Stride', 'animation.runStride', 0.55, 1.55, 0.01, '×'],
+      ['Arm Swing', 'animation.armSwing', 0.50, 1.75, 0.01, '×'],
+      ['Knee Lift', 'animation.kneeLift', 0.50, 1.75, 0.01, '×'],
+      ['Body Bob', 'animation.bodyBob', 0.00, 1.70, 0.01, '×'],
+      ['Hip Sway', 'animation.hipSway', 0.00, 1.70, 0.01, '×'],
+      ['Cadence', 'animation.cadence', 0.65, 1.45, 0.01, '×'],
+      ['Blend / Smooth', 'animation.blend', 0.55, 1.80, 0.01, '×'],
+      ['Run Lean', 'animation.lean', 0.30, 1.60, 0.01, '×']
+    ]
+  }
+];
+
+const FILTER_CONTROLS = [
+  ['Brightness', 'brightness', 0.55, 1.55, 0.01, '×'],
+  ['Contrast', 'contrast', 0.55, 1.55, 0.01, '×'],
+  ['Saturation', 'saturation', 0.00, 2.00, 0.01, '×'],
+  ['Sharpen', 'sharpness', 0.00, 1.00, 0.01, '%'],
+  ['Shadows', 'shadows', -0.60, 0.80, 0.01, ''],
+  ['Highlights', 'highlights', -0.60, 0.80, 0.01, ''],
+  ['Gamma', 'gamma', 0.65, 1.50, 0.01, ''],
+  ['Warmth', 'warmth', -1.00, 1.00, 0.01, '']
+];
+
 export class UIManager {
   constructor(maps, characters, defaults) {
     this.maps = maps;
@@ -6,6 +93,7 @@ export class UIManager {
     this.selectedMap = this.#valid(localStorage.getItem('zusmoff_map'), maps) || defaults.map;
     this.selectedCharacter = this.#valid(localStorage.getItem('zusmoff_character'), characters) || defaults.character;
     this.graphics = ['standard', 'hd'].includes(localStorage.getItem('zusmoff_graphics')) ? localStorage.getItem('zusmoff_graphics') : defaults.graphics;
+    this.tuning = this.#loadTuning();
     this.handlers = {};
     this.lastStart = null;
     this.screens = {
@@ -17,8 +105,10 @@ export class UIManager {
     this.error = document.getElementById('load-error');
     this.hud = document.getElementById('hud');
     this.debug = document.getElementById('debug');
+    this.tuningOverlay = document.getElementById('tuning-overlay');
     this.#renderCards();
     this.#syncQuality();
+    this.#renderTuningControls();
     this.#bind();
     this.#syncFullscreenButtons();
   }
@@ -33,7 +123,12 @@ export class UIManager {
   setHandlers(handlers) { this.handlers = handlers; }
 
   getSelection() {
-    return { mapId: this.selectedMap, characterId: this.selectedCharacter, graphics: this.graphics };
+    return {
+      mapId: this.selectedMap,
+      characterId: this.selectedCharacter,
+      graphics: this.graphics,
+      tuning: this.#clone(this.tuning)
+    };
   }
 
   showScreen(name) {
@@ -70,14 +165,28 @@ export class UIManager {
     this.error.classList.add('hidden');
     this.hud.classList.remove('hidden');
     document.getElementById('hud-map').textContent = `${map.shortName} • ${map.name.toUpperCase()}`;
-    document.getElementById('hud-quality').textContent = graphics === 'hd' ? 'HD • SHARP 50%' : 'STANDARD';
+    this.updateHUDQuality(graphics);
     this.debug.classList.toggle('hidden', !debugEnabled);
     this.#syncFullscreenButtons();
   }
 
-  hideHUD() { this.hud.classList.add('hidden'); }
+  updateHUDQuality(graphics = this.graphics) {
+    const el = document.getElementById('hud-quality');
+    if (!el) return;
+    const p = this.tuning.graphics.profiles[graphics];
+    const sharp = Math.round((p?.map?.sharpness || 0) * 100);
+    el.textContent = graphics === 'hd' ? `HD • MAP SHARP ${sharp}%` : 'STANDARD • CUSTOM';
+  }
 
+  hideHUD() { this.hud.classList.add('hidden'); }
   updateDebug(text) { if (!this.debug.classList.contains('hidden')) this.debug.textContent = text; }
+
+  openTuning() {
+    this.#renderTuningControls();
+    this.tuningOverlay.classList.remove('hidden');
+  }
+
+  closeTuning() { this.tuningOverlay.classList.add('hidden'); }
 
   #bind() {
     document.getElementById('btn-play').addEventListener('click', () => this.showScreen('select'));
@@ -85,6 +194,9 @@ export class UIManager {
     document.querySelectorAll('[data-back="menu"]').forEach((b) => b.addEventListener('click', () => this.showScreen('menu')));
     document.querySelectorAll('[data-quality]').forEach((b) => b.addEventListener('click', () => this.setQuality(b.dataset.quality)));
     document.querySelectorAll('[data-fullscreen]').forEach((b) => b.addEventListener('click', () => this.toggleFullscreen()));
+    document.querySelectorAll('[data-open-tuning]').forEach((b) => b.addEventListener('click', () => this.openTuning()));
+    document.querySelectorAll('[data-close-tuning]').forEach((b) => b.addEventListener('click', () => this.closeTuning()));
+    document.getElementById('btn-reset-tuning').addEventListener('click', () => this.#resetTuning());
     document.getElementById('btn-start').addEventListener('click', () => {
       this.#enterFullscreen();
       this.lastStart = this.getSelection();
@@ -139,16 +251,92 @@ export class UIManager {
     this.graphics = mode === 'hd' ? 'hd' : 'standard';
     localStorage.setItem('zusmoff_graphics', this.graphics);
     this.#syncQuality();
-    this.handlers.quality?.(this.graphics);
+    this.#renderTuningControls();
+    this.handlers.quality?.(this.graphics, this.#clone(this.tuning));
+    this.updateHUDQuality(this.graphics);
   }
 
   #syncQuality() {
     document.querySelectorAll('[data-quality]').forEach((b) => b.classList.toggle('active', b.dataset.quality === this.graphics));
     const text = this.graphics === 'hd'
-      ? 'HD: brighter balanced render + anisotropic filtering + sharpening strength 50%.'
-      : 'Standard: brighter performance preset, sharpening OFF.';
+      ? 'HD: render resolution lebih tinggi. Default sharpen Map + Character 50%; semua filter bisa diubah di TUNE.'
+      : 'Standard: preset lebih kalem/gelap dan sharpening default OFF; filter tetap bisa disesuaikan.';
     document.getElementById('quality-note').textContent = text;
     document.getElementById('settings-quality-note').textContent = text;
+  }
+
+  #renderTuningControls() {
+    const root = document.getElementById('tuning-controls');
+    if (!root) return;
+    root.innerHTML = '';
+    document.getElementById('tuning-profile-label').textContent = this.graphics.toUpperCase();
+
+    for (const group of CONTROL_GROUPS) {
+      root.appendChild(this.#makeGroup(group.title, group.subtitle, group.controls));
+    }
+
+    const profile = `graphics.profiles.${this.graphics}`;
+    root.appendChild(this.#makeGroup('WORLD LIGHTING', `Lighting aktif untuk mode ${this.graphics.toUpperCase()}.`, [
+      ['Exposure', `${profile}.exposure`, 0.65, 1.65, 0.01, ''],
+      ['Hemisphere', `${profile}.lighting.hemisphere`, 0.0, 3.0, 0.01, ''],
+      ['Ambient', `${profile}.lighting.ambient`, 0.0, 1.5, 0.01, ''],
+      ['Sun', `${profile}.lighting.sun`, 0.0, 4.0, 0.01, ''],
+      ['Fill Light', `${profile}.lighting.fill`, 0.0, 2.5, 0.01, '']
+    ]));
+
+    root.appendChild(this.#makeGroup('MAP FILTER', `Filter hanya untuk Clock Tower pada ${this.graphics.toUpperCase()}.`, FILTER_CONTROLS.map((c) => [c[0], `${profile}.map.${c[1]}`, ...c.slice(2)])));
+    root.appendChild(this.#makeGroup('CHARACTER FILTER', `Filter hanya untuk Naruto pada ${this.graphics.toUpperCase()}.`, FILTER_CONTROLS.map((c) => [c[0], `${profile}.character.${c[1]}`, ...c.slice(2)])));
+  }
+
+  #makeGroup(title, subtitle, controls) {
+    const group = document.createElement('section');
+    group.className = 'tune-group';
+    group.innerHTML = `<div class="tune-group-head"><b>${title}</b><small>${subtitle}</small></div>`;
+    const list = document.createElement('div');
+    list.className = 'slider-list';
+
+    for (const [label, path, min, max, step, suffix] of controls) {
+      const value = Number(this.#getByPath(this.tuning, path));
+      const row = document.createElement('label');
+      row.className = 'slider-row';
+      const displayValue = suffix === '%' ? `${Math.round(value * 100)}%` : `${this.#format(value, step)}${suffix || ''}`;
+      row.innerHTML = `<span class="slider-label">${label}</span><input type="range" min="${min}" max="${max}" step="${step}" value="${value}" data-setting-path="${path}"><output>${displayValue}</output>`;
+      const input = row.querySelector('input');
+      const output = row.querySelector('output');
+      input.addEventListener('input', () => {
+        const next = Number(input.value);
+        this.#setByPath(this.tuning, path, next);
+        output.textContent = suffix === '%' ? `${Math.round(next * 100)}%` : `${this.#format(next, step)}${suffix || ''}`;
+        this.#saveTuning();
+        this.handlers.tuning?.(this.#clone(this.tuning));
+        this.updateHUDQuality(this.graphics);
+      });
+      list.appendChild(row);
+    }
+    group.appendChild(list);
+    return group;
+  }
+
+  #resetTuning() {
+    this.tuning = this.#clone(DEFAULT_TUNING);
+    this.#saveTuning();
+    this.#renderTuningControls();
+    this.handlers.tuning?.(this.#clone(this.tuning));
+    this.handlers.quality?.(this.graphics, this.#clone(this.tuning));
+    this.updateHUDQuality(this.graphics);
+  }
+
+  #loadTuning() {
+    try {
+      const saved = JSON.parse(localStorage.getItem('zusmoff_tuning_v3') || 'null');
+      return this.#deepMerge(this.#clone(DEFAULT_TUNING), saved || {});
+    } catch (_) {
+      return this.#clone(DEFAULT_TUNING);
+    }
+  }
+
+  #saveTuning() {
+    localStorage.setItem('zusmoff_tuning_v3', JSON.stringify(this.tuning));
   }
 
   #renderCards() {
@@ -179,4 +367,21 @@ export class UIManager {
 
   #valid(id, list) { return list.some((x) => x.id === id && x.available) ? id : null; }
   #mb(bytes) { return `${(bytes / 1048576).toFixed(bytes > 10485760 ? 1 : 2)} MB`; }
+  #clone(value) { return JSON.parse(JSON.stringify(value)); }
+  #getByPath(obj, path) { return path.split('.').reduce((v, key) => v?.[key], obj); }
+  #setByPath(obj, path, value) {
+    const parts = path.split('.');
+    let cur = obj;
+    for (let i = 0; i < parts.length - 1; i++) cur = cur[parts[i]];
+    cur[parts.at(-1)] = value;
+  }
+  #format(value, step) { return step < 0.1 ? value.toFixed(2) : step < 1 ? value.toFixed(1) : value.toFixed(0); }
+  #deepMerge(base, extra) {
+    if (!extra || typeof extra !== 'object') return base;
+    for (const [key, value] of Object.entries(extra)) {
+      if (value && typeof value === 'object' && !Array.isArray(value) && base[key] && typeof base[key] === 'object') this.#deepMerge(base[key], value);
+      else if (value !== undefined) base[key] = value;
+    }
+    return base;
+  }
 }

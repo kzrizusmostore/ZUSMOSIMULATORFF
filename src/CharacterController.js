@@ -1,7 +1,19 @@
 import * as THREE from 'three';
 
+const DEFAULT_MOVEMENT = {
+  walkSpeed: 4.2,
+  runSpeed: 6.8,
+  crouchSpeed: 1.8,
+  proneSpeed: 0.9,
+  acceleration: 14.0,
+  deceleration: 18.0,
+  turnSpeed: 14.0,
+  jumpPower: 7.25,
+  gravity: 22.5
+};
+
 export class CharacterController {
-  constructor(characterGroup, input, cameraRig, collision, animation, spawnPoint) {
+  constructor(characterGroup, input, cameraRig, collision, animation, spawnPoint, tuning = null) {
     this.group = characterGroup;
     this.input = input;
     this.cameraRig = cameraRig;
@@ -17,13 +29,19 @@ export class CharacterController {
     this.targetQuaternion = new THREE.Quaternion();
     this.up = new THREE.Vector3(0, 1, 0);
     this.verticalVelocity = 0;
-    this.gravity = -22.5;
     this.grounded = true;
     this.wasGrounded = true;
     this.landTimer = 0;
     this.speed = 0;
     this.state = 'IDLE';
     this.stance = 'standing';
+    this.settings = { ...DEFAULT_MOVEMENT };
+    this.setTuning(tuning);
+  }
+
+  setTuning(tuning) {
+    const next = tuning?.movement || tuning || {};
+    this.settings = { ...DEFAULT_MOVEMENT, ...next };
   }
 
   update(dt) {
@@ -42,22 +60,22 @@ export class CharacterController {
       .addScaledVector(this.right, this.input.moveX);
     if (this.desired.lengthSq() > 0.0001) this.desired.normalize();
 
-    let maxSpeed = 3.35;
-    if (this.stance === 'prone') maxSpeed = 1.05;
-    else if (this.stance === 'crouch') maxSpeed = 2.0;
-    else if (this.input.run) maxSpeed = 8.6;
+    let maxSpeed = this.settings.walkSpeed;
+    if (this.stance === 'prone') maxSpeed = this.settings.proneSpeed;
+    else if (this.stance === 'crouch') maxSpeed = this.settings.crouchSpeed;
+    else if (this.input.run) maxSpeed = this.settings.runSpeed;
     maxSpeed *= mag;
 
     this.desiredVelocity.copy(this.desired).multiplyScalar(maxSpeed);
     const accelerating = this.desiredVelocity.lengthSq() > this.velocity.lengthSq();
-    const accel = this.input.run ? (accelerating ? 15.5 : 18.0) : (accelerating ? 13.5 : 17.0);
-    this.velocity.lerp(this.desiredVelocity, 1 - Math.exp(-accel * dt));
+    const responsiveness = accelerating ? this.settings.acceleration : this.settings.deceleration;
+    this.velocity.lerp(this.desiredVelocity, 1 - Math.exp(-responsiveness * dt));
     this.speed = Math.hypot(this.velocity.x, this.velocity.z);
 
     if (this.desired.lengthSq() > 0.001 && mag > 0.08) {
       const yaw = Math.atan2(this.desired.x, this.desired.z);
       this.targetQuaternion.setFromAxisAngle(this.up, yaw);
-      this.group.quaternion.slerp(this.targetQuaternion, 1 - Math.exp(-15 * dt));
+      this.group.quaternion.slerp(this.targetQuaternion, 1 - Math.exp(-this.settings.turnSpeed * dt));
     }
 
     const colliderHeight = this.stance === 'prone' ? 0.48 : this.stance === 'crouch' ? 1.08 : 1.68;
@@ -68,11 +86,11 @@ export class CharacterController {
     if (this.input.consumeJump() && this.grounded && this.stance !== 'prone') {
       this.input.crouch = false;
       this.stance = 'standing';
-      this.verticalVelocity = 7.45;
+      this.verticalVelocity = this.settings.jumpPower;
       this.grounded = false;
     }
 
-    if (!this.grounded) this.verticalVelocity += this.gravity * dt;
+    if (!this.grounded) this.verticalVelocity -= this.settings.gravity * dt;
     this.group.position.y += this.verticalVelocity * dt;
 
     const ground = this.collision.groundHeight(this.group.position.x, this.group.position.y, this.group.position.z, 7.5);
@@ -108,7 +126,7 @@ export class CharacterController {
     else if (this.stance === 'prone') this.state = this.speed > 0.10 ? 'PRONE_CRAWL' : 'PRONE_IDLE';
     else if (this.stance === 'crouch') this.state = this.speed > 0.10 ? 'CROUCH_WALK' : 'CROUCH_IDLE';
     else if (this.speed < 0.10 || inputMagnitude < 0.06) this.state = 'IDLE';
-    else if (this.input.run && this.speed > 4.15) this.state = 'RUN';
+    else if (this.input.run && this.speed > Math.max(this.settings.walkSpeed * 1.12, 4.5)) this.state = 'RUN';
     else this.state = 'WALK';
   }
 
