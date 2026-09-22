@@ -1,28 +1,140 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ZUSMO FF</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#050608">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>ZUSMO FF</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="stylesheet" href="./style.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+    }
+  }
+  </script>
 </head>
 <body>
-<div id="loading">
-  <div class="logo">ZUSMO FF</div>
-  <div class="box">
-    <div id="status">Preparing World...</div>
-    <div class="bar"><div id="progress"></div></div>
-    <div id="percent">0%</div>
+  <canvas id="game-canvas" aria-label="ZUSMO FF game canvas"></canvas>
+
+  <div id="engine-boot" class="overlay boot-overlay">
+    <div class="brand brand-xl">ZUSMO <b>FF</b></div>
+    <div class="spinner"></div>
+    <div id="engine-boot-text" class="muted">Preparing 3D engine...</div>
   </div>
-</div>
 
-<div id="menu" class="hidden">
-  <h1>ZUSMO FF</h1>
-  <button>PLAY</button>
-  <button>CHARACTER</button>
-  <button>MAP</button>
-  <button>SETTINGS</button>
-</div>
+  <main id="ui-root" class="hidden">
+    <section id="screen-menu" class="screen active">
+      <div class="menu-shell glass">
+        <div class="eyebrow">3D MOBILE MOVEMENT SIMULATOR</div>
+        <div class="brand brand-hero">ZUSMO <b>FF</b></div>
+        <div class="menu-actions">
+          <button id="btn-play" class="btn primary">PLAY</button>
+          <button id="btn-settings" class="btn ghost">SETTINGS</button>
+        </div>
+        <div class="tiny">Naruto • Clock Tower (CT)</div>
+      </div>
+    </section>
 
-<script src="src/main.js"></script>
+    <section id="screen-select" class="screen">
+      <div class="panel wide glass">
+        <div class="panel-head">
+          <button class="icon-btn" data-back="menu" aria-label="Back">‹</button>
+          <div><div class="eyebrow">READY ROOM</div><h1>SELECT LOADOUT</h1></div>
+        </div>
+        <div class="select-grid">
+          <div>
+            <h2>CHARACTER</h2>
+            <div id="character-list" class="card-list"></div>
+          </div>
+          <div>
+            <h2>MAP</h2>
+            <div id="map-list" class="card-list"></div>
+          </div>
+        </div>
+        <div class="quality-row">
+          <span>GRAPHICS</span>
+          <div class="segmented">
+            <button data-quality="standard">STANDARD</button>
+            <button data-quality="hd">HD</button>
+          </div>
+          <small id="quality-note">Standard: performance priority</small>
+        </div>
+        <button id="btn-start" class="btn primary full">START GAME</button>
+      </div>
+    </section>
+
+    <section id="screen-settings" class="screen">
+      <div class="panel glass compact">
+        <div class="panel-head">
+          <button class="icon-btn" data-back="menu" aria-label="Back">‹</button>
+          <div><div class="eyebrow">ZUSMO FF</div><h1>SETTINGS</h1></div>
+        </div>
+        <div class="setting-block">
+          <span>GRAPHICS QUALITY</span>
+          <div class="segmented large">
+            <button data-quality="standard">STANDARD</button>
+            <button data-quality="hd">HD</button>
+          </div>
+          <p id="settings-quality-note">Standard uses original texture clarity and lighter rendering.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="loading" class="overlay hidden">
+      <div class="loading-card glass">
+        <div class="brand brand-lg">ZUSMO <b>FF</b></div>
+        <div id="loading-status">Preparing World...</div>
+        <div class="progress-track"><div id="loading-bar"></div></div>
+        <div class="progress-meta"><b id="loading-percent">0%</b><span id="loading-bytes">0 MB / 0 MB</span></div>
+      </div>
+    </section>
+
+    <section id="load-error" class="overlay hidden">
+      <div class="error-card glass">
+        <div class="error-badge">!</div>
+        <h2>LOAD FAILED</h2>
+        <p id="error-message">Asset failed to load.</p>
+        <div class="error-actions">
+          <button id="btn-retry" class="btn primary">RETRY</button>
+          <button id="btn-error-menu" class="btn ghost">MENU</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="hud" class="hidden">
+      <div class="top-hud">
+        <span id="hud-map">CT</span>
+        <span id="hud-quality">STANDARD</span>
+        <button id="btn-exit" class="hud-chip">MENU</button>
+      </div>
+      <div id="camera-zone" aria-label="Camera drag zone"></div>
+      <div id="joystick" class="joystick"><div id="joystick-knob"></div></div>
+      <div class="actions">
+        <button id="action-run" class="action run">RUN</button>
+        <button id="action-jump" class="action">JUMP</button>
+        <button id="action-crouch" class="action">CROUCH</button>
+        <button id="action-prone" class="action">PRONE</button>
+      </div>
+      <pre id="debug" class="debug hidden"></pre>
+    </section>
+  </main>
+
+  <script>
+    window.__ZUSMO_BOOTED = false;
+    setTimeout(() => {
+      if (!window.__ZUSMO_BOOTED) document.getElementById('engine-boot-text').textContent = 'Engine is taking longer than expected...';
+    }, 8000);
+    setTimeout(() => {
+      if (!window.__ZUSMO_BOOTED) {
+        document.getElementById('engine-boot-text').innerHTML = '3D engine failed to load. Check internet/CDN, then <button onclick="location.reload()" class="inline-retry">RELOAD</button>';
+      }
+    }, 18000);
+  </script>
+  <script type="module" src="./src/main.js"></script>
 </body>
 </html>
