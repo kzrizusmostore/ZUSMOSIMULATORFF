@@ -32,6 +32,9 @@
       <div class="menu-shell glass">
         <div class="eyebrow">3D MOBILE MOVEMENT SIMULATOR</div>
         <div class="brand brand-hero">ZUSMO <b>FF</b></div>
+        <div class="menu-meta" aria-label="Game features">
+          <span>ORIGINAL RIG</span><span>LIVE TUNING</span><span>PER-MAP SPAWN</span>
+        </div>
         <div class="menu-actions">
           <button id="btn-play" class="btn primary">PLAY</button>
           <button id="btn-settings" class="btn ghost">SETTINGS</button>
@@ -66,7 +69,7 @@
           <small id="quality-note">Standard: performance priority</small>
         </div>
         <div class="select-actions">
-          <button class="btn ghost" data-open-tuning>TUNE FILTER / SPEED / ANIMATION</button>
+          <button class="btn ghost" data-open-tuning>QUICK TUNE</button>
           <button id="btn-start" class="btn primary">START GAME</button>
         </div>
       </div>
@@ -88,8 +91,8 @@
         </div>
         <div class="setting-block">
           <span>ADVANCED TUNING</span>
-          <button class="btn primary full" data-open-tuning>OPEN LIVE TUNING</button>
-          <p>Atur filter Map/Naruto, lighting, speed, dan procedural animation. Nilai disimpan otomatis.</p>
+          <button class="btn primary full" data-open-tuning>QUICK TUNE</button>
+          <p>Atur filter, lighting, speed, idle arm pose, ukuran/grounding, dan spawn khusus setiap map. Nilai disimpan otomatis.</p>
         </div>
         <div class="setting-block">
           <span>DISPLAY</span>
@@ -120,19 +123,21 @@
       </div>
     </section>
 
-    <section id="tuning-overlay" class="overlay tuning-overlay hidden">
+    <section id="tuning-overlay" class="overlay tuning-overlay hidden" aria-label="Live game tuning">
       <div class="tuning-panel glass">
         <div class="tuning-head">
-          <div>
-            <div class="eyebrow">LIVE CUSTOMIZER</div>
-            <h1>TUNE • <span id="tuning-profile-label">STANDARD</span></h1>
+          <div class="tuning-title-wrap">
+            <div class="eyebrow">LIVE TUNE</div>
+            <h1>SETTING <span id="tuning-profile-label">STANDARD</span></h1>
           </div>
-          <button class="icon-btn tune-close" data-close-tuning aria-label="Close">×</button>
+          <div class="tuning-head-actions">
+            <span id="tuning-save-state" class="tuning-save-state">LIVE</span>
+            <button class="icon-btn tune-close" data-close-tuning aria-label="Close settings">×</button>
+          </div>
         </div>
-        <p class="tuning-help">Geser slider sambil bermain. Semua perubahan langsung terlihat dan disimpan otomatis. STANDARD dan HD mempunyai profil visual masing-masing.</p>
-        <div class="tuning-toolbar">
-          <div class="tune-quality segmented large" aria-label="Graphics quality">
-            <button data-quality="standard">STANDARD</button>
+        <div class="tuning-quickbar">
+          <div class="tune-quality segmented" aria-label="Graphics quality">
+            <button data-quality="standard">STD</button>
             <button data-quality="hd">HD</button>
           </div>
           <div id="tuning-tabs" class="tuning-tabs" aria-label="Tuning categories"></div>
@@ -141,8 +146,9 @@
           <div id="tuning-controls" class="tuning-controls"></div>
         </div>
         <div class="tuning-footer">
-          <button id="btn-reset-tuning" class="btn ghost">RESET DEFAULT</button>
-          <button class="btn primary" data-close-tuning>DONE</button>
+          <button id="btn-reset-tuning" class="mini-action danger-soft" type="button">RESET</button>
+          <span class="tuning-live-note">ubah = langsung terlihat</span>
+          <button id="btn-save-tuning" class="mini-action primary" type="button">SIMPAN</button>
         </div>
       </div>
     </section>
