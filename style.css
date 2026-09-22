@@ -737,3 +737,14 @@ button,input,#joystick,#camera-zone{ -webkit-touch-callout:none; }
 }
 .value-step{touch-action:none!important;-webkit-touch-callout:none!important}
 .menu-shell::after{content:"V13"!important}
+
+/* V14 Free Fire reference control cluster */
+.actions{width:258px;height:182px}
+#action-punch{right:0;bottom:92px;width:78px;height:78px;font-size:11px;font-weight:950;background:rgba(18,20,24,.64);border-color:rgba(255,255,255,.24)}
+#action-punch:active,#action-punch.active{background:rgba(225,29,46,.58);border-color:rgba(255,103,116,.92);transform:scale(.96)}
+#action-jump{right:4px;bottom:8px}
+#action-crouch{right:82px;bottom:0}
+#action-prone{right:156px;bottom:6px}
+.action.run{right:158px;bottom:94px;width:62px;height:62px}
+@media (max-width:700px) and (orientation:landscape){.actions{transform:scale(.88);transform-origin:bottom right}}
+@media (orientation:portrait){.actions{transform:scale(.84);transform-origin:bottom right}}
