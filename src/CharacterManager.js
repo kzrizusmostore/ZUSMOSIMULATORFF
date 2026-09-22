@@ -10,6 +10,8 @@ export class CharacterManager {
     this.skeletons = [];
     this.animations = [];
     this.baseVisualY = 0;
+    this.visualScale = 1;
+    this.footOffset = 0;
   }
 
   install(definition, gltf) {
@@ -47,9 +49,13 @@ export class CharacterManager {
       const scale = THREE.MathUtils.clamp((definition.targetHeight || 1.72) / rigHeight, 0.25, 6);
       visual.scale.multiplyScalar(scale);
       visual.updateMatrixWorld(true);
-      minY = Infinity;
-      boneSet.forEach((b) => { minY = Math.min(minY, b.getWorldPosition(temp).y); });
-      if (Number.isFinite(minY)) visual.position.y -= minY;
+
+      // Ground the rendered mesh itself, not only the lowest bone.
+      // This removes the common visible gap between ankle/toe bones and shoe soles.
+      const meshBounds = new THREE.Box3().setFromObject(visual);
+      if (!meshBounds.isEmpty() && Number.isFinite(meshBounds.min.y)) {
+        visual.position.y -= meshBounds.min.y;
+      }
     }
 
     visual.updateMatrixWorld(true);
@@ -79,6 +85,18 @@ export class CharacterManager {
     if (this.group) this.group.rotation.set(0, 0, 0);
   }
 
+  setVisualTuning(tuning = null) {
+    if (!this.posePivot) return;
+    const character = tuning?.character || tuning || {};
+    const scale = THREE.MathUtils.clamp(Number(character.scale) || 1, 0.5, 1.6);
+    const footOffset = THREE.MathUtils.clamp(Number(character.footOffset) || 0, -0.5, 0.5);
+    this.visualScale = scale;
+    this.footOffset = footOffset;
+    this.posePivot.scale.setScalar(scale);
+    this.posePivot.position.y = footOffset;
+    this.posePivot.updateMatrixWorld(true);
+  }
+
   dispose() {
     if (!this.group) return;
     this.scene.remove(this.group);
@@ -99,5 +117,7 @@ export class CharacterManager {
     this.bones.clear();
     this.skeletons = [];
     this.animations = [];
+    this.visualScale = 1;
+    this.footOffset = 0;
   }
 }

@@ -148,8 +148,10 @@ export class Game {
 
       this.ui.updateLoading(98, 'Preparing Textures...', total, total);
       await this.#nextFrame();
-      const spawn = this.collision.findSpawn(mapDef.spawn?.x || 0, mapDef.spawn?.z || 0);
+      const groundOffset = this.tuning?.grounding?.groundOffset ?? 0.018;
+      const spawn = this.collision.findSpawn(mapDef.spawn?.x || 0, mapDef.spawn?.z || 0, groundOffset);
       this.characterManager.spawn(spawn);
+      this.characterManager.setVisualTuning(this.tuning);
       this.animation = new AnimationController(characterInfo, this.characterManager.baseVisualY, this.tuning);
       this.controller = new CharacterController(
         this.characterManager.group,
@@ -203,6 +205,7 @@ export class Game {
       if (Number.isFinite(light.sun)) this.sun.intensity = light.sun;
       if (Number.isFinite(light.fill)) this.fill.intensity = light.fill;
     }
+    this.characterManager?.setVisualTuning(this.tuning);
     this.controller?.setTuning(this.tuning);
     this.animation?.setTuning(this.tuning);
   }
@@ -263,6 +266,9 @@ Char Sharp: ${Math.round((profile?.character?.sharpness || 0) * 100)}%
 State: ${c.state}
 Speed: ${c.speed.toFixed(2)} m/s
 Walk / Run: ${c.settings.walkSpeed.toFixed(1)} / ${c.settings.runSpeed.toFixed(1)} m/s
+Char Scale: ${(this.tuning?.character?.scale ?? 1).toFixed(2)}x
+Foot Offset: ${(this.tuning?.character?.footOffset ?? 0).toFixed(3)} m
+Ground Offset: ${(c.grounding?.groundOffset ?? 0).toFixed(3)} m
 Grounded: ${c.grounded}
 Bones: ${this.characterManager.bones.size}
 Clips: ${this.characterManager.animations.length}`

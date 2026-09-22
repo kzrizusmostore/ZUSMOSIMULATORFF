@@ -16,7 +16,7 @@ export class CollisionSystem {
     this.bounds.copy(bounds);
   }
 
-  findSpawn(x = 0, z = 0) {
+  findSpawn(x = 0, z = 0, groundOffset = 0.018) {
     if (!this.meshes.length) return new THREE.Vector3(x, 2, z);
     const top = this.bounds.max.y + 20;
     const offsets = [0, 18, -18, 36, -36];
@@ -33,7 +33,7 @@ export class CollisionSystem {
     if (candidates.length) {
       candidates.sort((a, b) => a.y - b.y || (Math.abs(a.x - x) + Math.abs(a.z - z)) - (Math.abs(b.x - x) + Math.abs(b.z - z)));
       const best = candidates[0];
-      return new THREE.Vector3(best.x, best.y + 0.035, best.z);
+      return new THREE.Vector3(best.x, best.y + groundOffset, best.z);
     }
     return new THREE.Vector3(0, this.bounds.max.y + 2, 0);
   }

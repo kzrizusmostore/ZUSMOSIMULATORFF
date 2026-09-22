@@ -22,57 +22,33 @@ const DEFAULT_TUNING = {
     blend: 1.10,
     lean: 1.00
   },
+  character: {
+    scale: 1.00,
+    footOffset: -0.015
+  },
+  grounding: {
+    groundOffset: 0.018,
+    snapDistance: 0.62,
+    landingDistance: 0.20,
+    probeDistance: 7.5
+  },
   graphics: {
     profiles: {
       standard: {
-        exposure: 1.05,
-        lighting: { hemisphere: 1.20, ambient: 0.25, sun: 1.75, fill: 0.45 },
-        map: { brightness: 0.94, contrast: 1.03, saturation: 1.00, sharpness: 0.00, shadows: 0.02, highlights: -0.07, gamma: 1.00, warmth: 0.00 },
-        character: { brightness: 1.02, contrast: 1.04, saturation: 1.04, sharpness: 0.00, shadows: 0.05, highlights: -0.01, gamma: 1.00, warmth: 0.02 }
+        exposure: 1.00,
+        lighting: { hemisphere: 1.08, ambient: 0.20, sun: 1.55, fill: 0.38 },
+        map: { brightness: 0.90, contrast: 1.02, saturation: 0.98, sharpness: 0.00, shadows: 0.00, highlights: -0.08, gamma: 1.00, warmth: 0.00 },
+        character: { brightness: 0.99, contrast: 1.03, saturation: 1.02, sharpness: 0.00, shadows: 0.03, highlights: -0.02, gamma: 1.00, warmth: 0.02 }
       },
       hd: {
-        exposure: 1.18,
-        lighting: { hemisphere: 1.35, ambient: 0.32, sun: 1.95, fill: 0.58 },
-        map: { brightness: 1.06, contrast: 1.05, saturation: 1.05, sharpness: 0.50, shadows: 0.08, highlights: 0.01, gamma: 1.02, warmth: 0.00 },
-        character: { brightness: 1.08, contrast: 1.06, saturation: 1.08, sharpness: 0.50, shadows: 0.10, highlights: 0.02, gamma: 1.02, warmth: 0.03 }
+        exposure: 1.16,
+        lighting: { hemisphere: 1.30, ambient: 0.30, sun: 1.88, fill: 0.54 },
+        map: { brightness: 1.08, contrast: 1.04, saturation: 1.05, sharpness: 0.50, shadows: 0.11, highlights: 0.03, gamma: 1.04, warmth: 0.00 },
+        character: { brightness: 1.10, contrast: 1.05, saturation: 1.07, sharpness: 0.50, shadows: 0.12, highlights: 0.03, gamma: 1.04, warmth: 0.03 }
       }
     }
   }
 };
-
-const CONTROL_GROUPS = [
-  {
-    title: 'MOVEMENT',
-    subtitle: 'Atur rasa controller dan kecepatan karakter.',
-    controls: [
-      ['Walk Speed', 'movement.walkSpeed', 2.5, 6.0, 0.05, ' m/s'],
-      ['Run Speed', 'movement.runSpeed', 4.5, 9.0, 0.05, ' m/s'],
-      ['Crouch Speed', 'movement.crouchSpeed', 0.6, 3.0, 0.05, ' m/s'],
-      ['Prone Speed', 'movement.proneSpeed', 0.3, 1.6, 0.05, ' m/s'],
-      ['Acceleration', 'movement.acceleration', 5, 25, 0.5, ''],
-      ['Deceleration', 'movement.deceleration', 5, 28, 0.5, ''],
-      ['Turn Speed', 'movement.turnSpeed', 5, 24, 0.5, ''],
-      ['Jump Power', 'movement.jumpPower', 4.5, 10, 0.05, ''],
-      ['Gravity', 'movement.gravity', 12, 34, 0.5, '']
-    ]
-  },
-  {
-    title: 'ANIMATION',
-    subtitle: 'Naik-turunkan gerak badan tanpa mengganti skeleton Naruto.',
-    controls: [
-      ['Motion Intensity', 'animation.intensity', 0.55, 1.70, 0.01, '×'],
-      ['Walk Stride', 'animation.walkStride', 0.55, 1.65, 0.01, '×'],
-      ['Run Stride', 'animation.runStride', 0.55, 1.55, 0.01, '×'],
-      ['Arm Swing', 'animation.armSwing', 0.50, 1.75, 0.01, '×'],
-      ['Knee Lift', 'animation.kneeLift', 0.50, 1.75, 0.01, '×'],
-      ['Body Bob', 'animation.bodyBob', 0.00, 1.70, 0.01, '×'],
-      ['Hip Sway', 'animation.hipSway', 0.00, 1.70, 0.01, '×'],
-      ['Cadence', 'animation.cadence', 0.65, 1.45, 0.01, '×'],
-      ['Blend / Smooth', 'animation.blend', 0.55, 1.80, 0.01, '×'],
-      ['Run Lean', 'animation.lean', 0.30, 1.60, 0.01, '×']
-    ]
-  }
-];
 
 const FILTER_CONTROLS = [
   ['Brightness', 'brightness', 0.55, 1.55, 0.01, '×'],
@@ -94,6 +70,7 @@ export class UIManager {
     this.selectedCharacter = this.#valid(localStorage.getItem('zusmoff_character'), characters) || defaults.character;
     this.graphics = ['standard', 'hd'].includes(localStorage.getItem('zusmoff_graphics')) ? localStorage.getItem('zusmoff_graphics') : defaults.graphics;
     this.tuning = this.#loadTuning();
+    this.activeTuneTab = 'movement';
     this.handlers = {};
     this.lastStart = null;
     this.screens = {
@@ -107,8 +84,8 @@ export class UIManager {
     this.debug = document.getElementById('debug');
     this.tuningOverlay = document.getElementById('tuning-overlay');
     this.#renderCards();
-    this.#syncQuality();
     this.#renderTuningControls();
+    this.#syncQuality();
     this.#bind();
     this.#syncFullscreenButtons();
   }
@@ -167,6 +144,7 @@ export class UIManager {
     document.getElementById('hud-map').textContent = `${map.shortName} • ${map.name.toUpperCase()}`;
     this.updateHUDQuality(graphics);
     this.debug.classList.toggle('hidden', !debugEnabled);
+    this.#syncQuality();
     this.#syncFullscreenButtons();
   }
 
@@ -175,7 +153,7 @@ export class UIManager {
     if (!el) return;
     const p = this.tuning.graphics.profiles[graphics];
     const sharp = Math.round((p?.map?.sharpness || 0) * 100);
-    el.textContent = graphics === 'hd' ? `HD • MAP SHARP ${sharp}%` : 'STANDARD • CUSTOM';
+    el.textContent = graphics === 'hd' ? `HD • SHARP ${sharp}%` : 'STANDARD';
   }
 
   hideHUD() { this.hud.classList.add('hidden'); }
@@ -184,6 +162,8 @@ export class UIManager {
   openTuning() {
     this.#renderTuningControls();
     this.tuningOverlay.classList.remove('hidden');
+    const scroller = this.tuningOverlay.querySelector('.tuning-scroll');
+    if (scroller) scroller.scrollTop = 0;
   }
 
   closeTuning() { this.tuningOverlay.classList.add('hidden'); }
@@ -259,33 +239,110 @@ export class UIManager {
   #syncQuality() {
     document.querySelectorAll('[data-quality]').forEach((b) => b.classList.toggle('active', b.dataset.quality === this.graphics));
     const text = this.graphics === 'hd'
-      ? 'HD: render resolution lebih tinggi. Default sharpen Map + Character 50%; semua filter bisa diubah di TUNE.'
-      : 'Standard: preset lebih kalem/gelap dan sharpening default OFF; filter tetap bisa disesuaikan.';
+      ? 'HD aktif: resolusi/filter lebih tinggi + sharpening default 50%. Semua nilai masih bisa dituning.'
+      : 'STANDARD aktif: rendering lebih ringan, sharpening default OFF, dengan brightness yang lebih kalem.';
     document.getElementById('quality-note').textContent = text;
     document.getElementById('settings-quality-note').textContent = text;
+    const label = document.getElementById('tuning-profile-label');
+    if (label) label.textContent = this.graphics.toUpperCase();
+  }
+
+  #getTuneGroups() {
+    const profile = `graphics.profiles.${this.graphics}`;
+    return [
+      {
+        id: 'movement', label: 'MOVE', title: 'MOVEMENT', subtitle: 'Atur kecepatan dan rasa controller.',
+        controls: [
+          ['Walk Speed', 'movement.walkSpeed', 2.5, 6.0, 0.05, ' m/s'],
+          ['Run Speed', 'movement.runSpeed', 4.5, 9.0, 0.05, ' m/s'],
+          ['Crouch Speed', 'movement.crouchSpeed', 0.6, 3.0, 0.05, ' m/s'],
+          ['Prone Speed', 'movement.proneSpeed', 0.3, 1.6, 0.05, ' m/s'],
+          ['Acceleration', 'movement.acceleration', 5, 25, 0.5, ''],
+          ['Deceleration', 'movement.deceleration', 5, 28, 0.5, ''],
+          ['Turn Speed', 'movement.turnSpeed', 5, 24, 0.5, ''],
+          ['Jump Power', 'movement.jumpPower', 4.5, 10, 0.05, ''],
+          ['Gravity', 'movement.gravity', 12, 34, 0.5, '']
+        ]
+      },
+      {
+        id: 'animation', label: 'ANIM', title: 'ANIMATION', subtitle: 'Atur gerak skeleton Naruto secara live.',
+        controls: [
+          ['Motion Intensity', 'animation.intensity', 0.55, 1.70, 0.01, '×'],
+          ['Walk Stride', 'animation.walkStride', 0.55, 1.65, 0.01, '×'],
+          ['Run Stride', 'animation.runStride', 0.55, 1.55, 0.01, '×'],
+          ['Arm Swing', 'animation.armSwing', 0.50, 1.75, 0.01, '×'],
+          ['Knee Lift', 'animation.kneeLift', 0.50, 1.75, 0.01, '×'],
+          ['Body Bob', 'animation.bodyBob', 0.00, 1.70, 0.01, '×'],
+          ['Hip Sway', 'animation.hipSway', 0.00, 1.70, 0.01, '×'],
+          ['Cadence', 'animation.cadence', 0.65, 1.45, 0.01, '×'],
+          ['Blend / Smooth', 'animation.blend', 0.55, 1.80, 0.01, '×'],
+          ['Run Lean', 'animation.lean', 0.30, 1.60, 0.01, '×']
+        ]
+      },
+      {
+        id: 'character', label: 'SIZE/GROUND', title: 'CHARACTER SIZE & GROUND', subtitle: 'Sesuaikan ukuran Naruto dan posisi telapak kaki terhadap permukaan map.',
+        controls: [
+          ['Character Size', 'character.scale', 0.70, 1.35, 0.01, '×'],
+          ['Foot Ground Offset', 'character.footOffset', -0.25, 0.25, 0.005, ' m'],
+          ['Physics Ground Offset', 'grounding.groundOffset', -0.08, 0.16, 0.002, ' m'],
+          ['Ground Snap Distance', 'grounding.snapDistance', 0.10, 1.40, 0.02, ' m'],
+          ['Landing Snap Range', 'grounding.landingDistance', 0.05, 0.55, 0.01, ' m'],
+          ['Ground Probe Depth', 'grounding.probeDistance', 3.0, 14.0, 0.25, ' m']
+        ]
+      },
+      {
+        id: 'world', label: 'LIGHT', title: 'WORLD LIGHTING', subtitle: `Lighting untuk mode ${this.graphics.toUpperCase()}.`,
+        controls: [
+          ['Exposure', `${profile}.exposure`, 0.65, 1.65, 0.01, ''],
+          ['Hemisphere', `${profile}.lighting.hemisphere`, 0.0, 3.0, 0.01, ''],
+          ['Ambient', `${profile}.lighting.ambient`, 0.0, 1.5, 0.01, ''],
+          ['Sun', `${profile}.lighting.sun`, 0.0, 4.0, 0.01, ''],
+          ['Fill Light', `${profile}.lighting.fill`, 0.0, 2.5, 0.01, '']
+        ]
+      },
+      {
+        id: 'map', label: 'MAP', title: 'MAP FILTER', subtitle: `Filter Clock Tower untuk ${this.graphics.toUpperCase()}.`,
+        controls: FILTER_CONTROLS.map((c) => [c[0], `${profile}.map.${c[1]}`, ...c.slice(2)])
+      },
+      {
+        id: 'charfilter', label: 'NARUTO', title: 'CHARACTER FILTER', subtitle: `Filter Naruto untuk ${this.graphics.toUpperCase()}.`,
+        controls: FILTER_CONTROLS.map((c) => [c[0], `${profile}.character.${c[1]}`, ...c.slice(2)])
+      }
+    ];
   }
 
   #renderTuningControls() {
     const root = document.getElementById('tuning-controls');
-    if (!root) return;
+    const tabs = document.getElementById('tuning-tabs');
+    if (!root || !tabs) return;
     root.innerHTML = '';
-    document.getElementById('tuning-profile-label').textContent = this.graphics.toUpperCase();
+    tabs.innerHTML = '';
+    const groups = this.#getTuneGroups();
+    if (!groups.some((g) => g.id === this.activeTuneTab)) this.activeTuneTab = groups[0].id;
 
-    for (const group of CONTROL_GROUPS) {
-      root.appendChild(this.#makeGroup(group.title, group.subtitle, group.controls));
+    for (const groupDef of groups) {
+      const tab = document.createElement('button');
+      tab.type = 'button';
+      tab.className = 'tuning-tab';
+      tab.textContent = groupDef.label;
+      tab.classList.toggle('active', groupDef.id === this.activeTuneTab);
+      tab.addEventListener('click', () => {
+        this.activeTuneTab = groupDef.id;
+        this.#renderTuningControls();
+        const scroller = this.tuningOverlay.querySelector('.tuning-scroll');
+        if (scroller) scroller.scrollTop = 0;
+      });
+      tabs.appendChild(tab);
+
+      const group = this.#makeGroup(groupDef.title, groupDef.subtitle, groupDef.controls);
+      group.dataset.tuneGroup = groupDef.id;
+      group.classList.toggle('active', groupDef.id === this.activeTuneTab);
+      root.appendChild(group);
     }
 
-    const profile = `graphics.profiles.${this.graphics}`;
-    root.appendChild(this.#makeGroup('WORLD LIGHTING', `Lighting aktif untuk mode ${this.graphics.toUpperCase()}.`, [
-      ['Exposure', `${profile}.exposure`, 0.65, 1.65, 0.01, ''],
-      ['Hemisphere', `${profile}.lighting.hemisphere`, 0.0, 3.0, 0.01, ''],
-      ['Ambient', `${profile}.lighting.ambient`, 0.0, 1.5, 0.01, ''],
-      ['Sun', `${profile}.lighting.sun`, 0.0, 4.0, 0.01, ''],
-      ['Fill Light', `${profile}.lighting.fill`, 0.0, 2.5, 0.01, '']
-    ]));
-
-    root.appendChild(this.#makeGroup('MAP FILTER', `Filter hanya untuk Clock Tower pada ${this.graphics.toUpperCase()}.`, FILTER_CONTROLS.map((c) => [c[0], `${profile}.map.${c[1]}`, ...c.slice(2)])));
-    root.appendChild(this.#makeGroup('CHARACTER FILTER', `Filter hanya untuk Naruto pada ${this.graphics.toUpperCase()}.`, FILTER_CONTROLS.map((c) => [c[0], `${profile}.character.${c[1]}`, ...c.slice(2)])));
+    const label = document.getElementById('tuning-profile-label');
+    if (label) label.textContent = this.graphics.toUpperCase();
+    this.#syncQuality();
   }
 
   #makeGroup(title, subtitle, controls) {
@@ -328,7 +385,7 @@ export class UIManager {
 
   #loadTuning() {
     try {
-      const saved = JSON.parse(localStorage.getItem('zusmoff_tuning_v3') || 'null');
+      const saved = JSON.parse(localStorage.getItem('zusmoff_tuning_v4') || 'null');
       return this.#deepMerge(this.#clone(DEFAULT_TUNING), saved || {});
     } catch (_) {
       return this.#clone(DEFAULT_TUNING);
@@ -336,7 +393,7 @@ export class UIManager {
   }
 
   #saveTuning() {
-    localStorage.setItem('zusmoff_tuning_v3', JSON.stringify(this.tuning));
+    localStorage.setItem('zusmoff_tuning_v4', JSON.stringify(this.tuning));
   }
 
   #renderCards() {
@@ -375,7 +432,12 @@ export class UIManager {
     for (let i = 0; i < parts.length - 1; i++) cur = cur[parts[i]];
     cur[parts.at(-1)] = value;
   }
-  #format(value, step) { return step < 0.1 ? value.toFixed(2) : step < 1 ? value.toFixed(1) : value.toFixed(0); }
+  #format(value, step) {
+    if (step < 0.01) return value.toFixed(3);
+    if (step < 0.1) return value.toFixed(2);
+    if (step < 1) return value.toFixed(1);
+    return value.toFixed(0);
+  }
   #deepMerge(base, extra) {
     if (!extra || typeof extra !== 'object') return base;
     for (const [key, value] of Object.entries(extra)) {

@@ -12,6 +12,13 @@ const DEFAULT_MOVEMENT = {
   gravity: 22.5
 };
 
+const DEFAULT_GROUNDING = {
+  groundOffset: 0.018,
+  snapDistance: 0.62,
+  landingDistance: 0.20,
+  probeDistance: 7.5
+};
+
 export class CharacterController {
   constructor(characterGroup, input, cameraRig, collision, animation, spawnPoint, tuning = null) {
     this.group = characterGroup;
@@ -36,12 +43,17 @@ export class CharacterController {
     this.state = 'IDLE';
     this.stance = 'standing';
     this.settings = { ...DEFAULT_MOVEMENT };
+    this.grounding = { ...DEFAULT_GROUNDING };
+    this.characterScale = 1;
     this.setTuning(tuning);
   }
 
   setTuning(tuning) {
     const next = tuning?.movement || tuning || {};
     this.settings = { ...DEFAULT_MOVEMENT, ...next };
+    this.grounding = { ...DEFAULT_GROUNDING, ...(tuning?.grounding || {}) };
+    const rawScale = tuning?.character?.scale;
+    this.characterScale = THREE.MathUtils.clamp(Number.isFinite(rawScale) ? rawScale : 1, 0.5, 1.6);
   }
 
   update(dt) {
@@ -78,7 +90,7 @@ export class CharacterController {
       this.group.quaternion.slerp(this.targetQuaternion, 1 - Math.exp(-this.settings.turnSpeed * dt));
     }
 
-    const colliderHeight = this.stance === 'prone' ? 0.48 : this.stance === 'crouch' ? 1.08 : 1.68;
+    const colliderHeight = (this.stance === 'prone' ? 0.48 : this.stance === 'crouch' ? 1.08 : 1.68) * this.characterScale;
     this.delta.set(this.velocity.x * dt, 0, this.velocity.z * dt);
     this.delta.copy(this.collision.resolveHorizontal(this.group.position, this.delta, colliderHeight));
     this.group.position.add(this.delta);
@@ -93,18 +105,22 @@ export class CharacterController {
     if (!this.grounded) this.verticalVelocity -= this.settings.gravity * dt;
     this.group.position.y += this.verticalVelocity * dt;
 
-    const ground = this.collision.groundHeight(this.group.position.x, this.group.position.y, this.group.position.z, 7.5);
+    const probeDistance = THREE.MathUtils.clamp(this.grounding.probeDistance, 2.5, 16);
+    const ground = this.collision.groundHeight(this.group.position.x, this.group.position.y, this.group.position.z, probeDistance);
     if (ground !== null) {
-      const gap = this.group.position.y - ground;
+      const targetGroundY = ground + this.grounding.groundOffset;
+      const gap = this.group.position.y - targetGroundY;
+      const snapDistance = THREE.MathUtils.clamp(this.grounding.snapDistance, 0.05, 1.8);
+      const landingDistance = THREE.MathUtils.clamp(this.grounding.landingDistance, 0.03, 0.8);
       if (this.grounded) {
-        if (gap < 0.45 && gap > -0.55) {
-          this.group.position.y = ground + 0.035;
+        if (gap < snapDistance && gap > -Math.max(0.75, snapDistance * 1.35)) {
+          this.group.position.y = targetGroundY;
           this.verticalVelocity = 0;
-        } else if (gap >= 0.45) {
+        } else if (gap >= snapDistance) {
           this.grounded = false;
         }
-      } else if (this.verticalVelocity <= 0 && gap <= 0.12 && gap > -0.8) {
-        this.group.position.y = ground + 0.035;
+      } else if (this.verticalVelocity <= 0 && gap <= landingDistance && gap > -Math.max(0.9, snapDistance * 1.5)) {
+        this.group.position.y = targetGroundY;
         this.verticalVelocity = 0;
         this.grounded = true;
         if (!this.wasGrounded) this.landTimer = 0.20;
