@@ -16,22 +16,22 @@ const DEFAULT_TUNING = {
     runStride: 1.00,
     armSwing: 1.00,
     kneeLift: 1.00,
-    bodyBob: 1.00,
-    hipSway: 1.00,
+    bodyBob: 0.72,
+    hipSway: 0.70,
     cadence: 1.00,
-    blend: 1.15,
-    lean: 1.00,
-    idleArmDown: 1.04,
-    idleElbowBend: 0.34,
-    idleArmTwist: 0.07,
-    idleShoulderRelax: 0.11,
-    idleHandRelax: 0.13,
-    idleBreathing: 0.75,
-    idleHeadMotion: 0.65
+    blend: 1.20,
+    lean: 0.82,
+    idleArmDown: 1.00,
+    idleElbowBend: 0.30,
+    idleArmTwist: 0.055,
+    idleShoulderRelax: 0.10,
+    idleHandRelax: 0.11,
+    idleBreathing: 0.72,
+    idleHeadMotion: 0.55
   },
   character: {
     scale: 0.71,
-    footOffset: -0.015
+    footOffset: 0
   },
   grounding: {
     groundOffset: 0.018,
@@ -210,24 +210,25 @@ export class UIManager {
 
   #bindTuningDrag() {
     const panel = this.tuningOverlay?.querySelector('.tuning-panel');
-    const handle = this.tuningOverlay?.querySelector('.tuning-head');
+    const handle = document.getElementById('btn-move-tuning');
     if (!panel || !handle) return;
-    handle.classList.add('tune-drag-handle');
 
+    handle.addEventListener('contextmenu', (event) => event.preventDefault());
     handle.addEventListener('pointerdown', (event) => {
-      if (event.target.closest('button, input, select, textarea')) return;
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
       const rect = panel.getBoundingClientRect();
       this.tuneDrag = { pointerId: event.pointerId, dx: event.clientX - rect.left, dy: event.clientY - rect.top };
       handle.setPointerCapture?.(event.pointerId);
       panel.classList.add('is-dragging');
       event.preventDefault();
+      event.stopPropagation();
     });
 
     handle.addEventListener('pointermove', (event) => {
       if (!this.tuneDrag || this.tuneDrag.pointerId !== event.pointerId) return;
-      const w = panel.offsetWidth;
-      const h = panel.offsetHeight;
       const vp = this.#viewportBounds();
+      const w = Math.min(panel.offsetWidth, vp.width - 12);
+      const h = Math.min(panel.offsetHeight, vp.height - 12);
       const pad = 6;
       const minX = vp.left + pad;
       const minY = vp.top + pad;
@@ -239,18 +240,28 @@ export class UIManager {
       panel.style.top = `${y}px`;
       panel.style.right = 'auto';
       panel.style.bottom = 'auto';
+      event.preventDefault();
     });
 
     const finish = (event) => {
       if (!this.tuneDrag || this.tuneDrag.pointerId !== event.pointerId) return;
       const rect = panel.getBoundingClientRect();
-      localStorage.setItem('zusmoff_tune_position_v9', JSON.stringify({ x: Math.round(rect.left), y: Math.round(rect.top) }));
+      const vp = this.#viewportBounds();
+      const spanX = Math.max(1, vp.width - rect.width);
+      const spanY = Math.max(1, vp.height - rect.height);
+      const nx = THREE_SAFE((rect.left - vp.left) / spanX);
+      const ny = THREE_SAFE((rect.top - vp.top) / spanY);
+      localStorage.setItem('zusmoff_tune_position_v11', JSON.stringify({ nx, ny }));
       this.tuneDrag = null;
       panel.classList.remove('is-dragging');
       try { handle.releasePointerCapture?.(event.pointerId); } catch (_) {}
     };
+    const THREE_SAFE = (v) => Math.max(0, Math.min(1, Number.isFinite(v) ? v : 0));
     handle.addEventListener('pointerup', finish);
     handle.addEventListener('pointercancel', finish);
+    handle.addEventListener('lostpointercapture', (event) => {
+      if (this.tuneDrag?.pointerId === event.pointerId) finish(event);
+    });
   }
 
   #viewportBounds() {
@@ -266,24 +277,24 @@ export class UIManager {
   #applySavedTunePosition() {
     const panel = this.tuningOverlay?.querySelector('.tuning-panel');
     if (!panel) return;
-    let restored = false;
-    try {
-      const pos = JSON.parse(localStorage.getItem('zusmoff_tune_position_v9') || 'null');
-      if (pos && Number.isFinite(pos.x) && Number.isFinite(pos.y)) {
-        panel.style.left = `${pos.x}px`;
-        panel.style.top = `${pos.y}px`;
-        panel.style.right = 'auto';
-        panel.style.bottom = 'auto';
-        restored = true;
-      }
-    } catch (_) {}
     requestAnimationFrame(() => {
-      if (!restored) {
-        const vp = this.#viewportBounds();
-        const rect = panel.getBoundingClientRect();
-        panel.style.left = `${Math.max(vp.left + 8, vp.left + vp.width - rect.width - 8)}px`;
-        panel.style.top = `${Math.max(vp.top + 8, vp.top + 54)}px`;
-      }
+      const vp = this.#viewportBounds();
+      const rect = panel.getBoundingClientRect();
+      let nx = 1;
+      let ny = 0.16;
+      try {
+        const pos = JSON.parse(localStorage.getItem('zusmoff_tune_position_v11') || 'null');
+        if (pos && Number.isFinite(pos.nx) && Number.isFinite(pos.ny)) {
+          nx = Math.max(0, Math.min(1, pos.nx));
+          ny = Math.max(0, Math.min(1, pos.ny));
+        }
+      } catch (_) {}
+      const spanX = Math.max(0, vp.width - rect.width);
+      const spanY = Math.max(0, vp.height - rect.height);
+      panel.style.left = `${vp.left + spanX * nx}px`;
+      panel.style.top = `${vp.top + spanY * ny}px`;
+      panel.style.right = 'auto';
+      panel.style.bottom = 'auto';
       this.#clampTunePosition();
     });
   }
@@ -537,7 +548,13 @@ export class UIManager {
       };
 
       this.#setSliderValue(slider, initial);
-      this.#bindIntentSlider(slider, applyInternal);
+      if (window.matchMedia?.('(pointer:fine)').matches) {
+        this.#bindIntentSlider(slider, applyInternal);
+      } else {
+        slider.removeAttribute('tabindex');
+        slider.removeAttribute('role');
+        slider.setAttribute('aria-hidden', 'true');
+      }
       number.addEventListener('input', () => {
         if (number.value === '' || number.value === '-' || number.value === '.') return;
         const displayValue = clampDisplay(Number(number.value));
@@ -552,8 +569,9 @@ export class UIManager {
         if (event.key === 'Enter') { event.preventDefault(); number.blur(); }
       });
       stepButtons.forEach((button) => {
-        let holdTimer = null;
-        let repeatTimer = null;
+        let holdTimer = 0;
+        let repeatTimer = 0;
+        let activePointer = null;
         const nudge = () => {
           const dir = Number(button.dataset.dir) || 0;
           const current = Number(number.value);
@@ -562,26 +580,37 @@ export class UIManager {
           number.value = formatDisplay(displayValue);
           applyInternal(displayValue / displayScale, 'step');
         };
-        const stop = () => {
+        const stop = (event = null) => {
+          if (event && activePointer !== null && event.pointerId !== undefined && event.pointerId !== activePointer) return;
           if (holdTimer) clearTimeout(holdTimer);
           if (repeatTimer) clearInterval(repeatTimer);
-          holdTimer = repeatTimer = null;
+          holdTimer = repeatTimer = 0;
+          activePointer = null;
           button.classList.remove('is-holding');
         };
+        button.addEventListener('contextmenu', (event) => event.preventDefault());
+        button.addEventListener('click', (event) => event.preventDefault());
         button.addEventListener('pointerdown', (event) => {
           if (event.pointerType === 'mouse' && event.button !== 0) return;
           stop();
-          button.setPointerCapture?.(event.pointerId);
+          activePointer = event.pointerId;
+          try { button.setPointerCapture?.(event.pointerId); } catch (_) {}
           button.classList.add('is-holding');
           nudge();
           holdTimer = setTimeout(() => {
-            repeatTimer = setInterval(nudge, 70);
-          }, 300);
+            // Continuous repeat while the button stays held. Fast enough to tune
+            // values comfortably without requiring dozens of separate taps.
+            repeatTimer = setInterval(nudge, 48);
+          }, 220);
           event.preventDefault();
+          event.stopPropagation();
         });
         button.addEventListener('pointerup', stop);
         button.addEventListener('pointercancel', stop);
         button.addEventListener('lostpointercapture', stop);
+        button.addEventListener('pointerleave', (event) => {
+          if (event.pointerType === 'mouse' && activePointer !== null) stop(event);
+        });
       });
       list.appendChild(row);
     }
@@ -672,13 +701,13 @@ export class UIManager {
   async #copyTuningSettings() {
     const payload = {
       type: 'ZUSMO_FF_TUNE',
-      version: 10,
+      version: 11,
       map: this.selectedMap,
       character: this.selectedCharacter,
       graphics: 'HD_FIXED',
       tuning: this.#clone(this.tuning)
     };
-    const text = `ZUSMO FF TUNE V10\n${JSON.stringify(payload, null, 2)}`;
+    const text = `ZUSMO FF TUNE V11\n${JSON.stringify(payload, null, 2)}`;
     let copied = false;
 
     try {
@@ -813,14 +842,14 @@ export class UIManager {
 
   #loadTuning() {
     try {
-      const currentRaw = localStorage.getItem('zusmoff_tuning_v10');
+      const currentRaw = localStorage.getItem('zusmoff_tuning_v11');
       if (currentRaw) return this.#deepMerge(this.#clone(DEFAULT_TUNING), JSON.parse(currentRaw) || {});
 
-      // V10 intentionally does NOT import legacy movement/animation/character
+      // V11 intentionally does NOT import legacy movement/animation/character
       // values. This prevents old idleArmDown=0 style settings from bringing
       // the GLB back toward T-pose. Keep only non-animation world tuning that
       // the user already calibrated (spawn, ground and visual filters).
-      const legacyRaw = localStorage.getItem('zusmoff_tuning_v9') || localStorage.getItem('zusmoff_tuning_v8') || localStorage.getItem('zusmoff_tuning_v7') || localStorage.getItem('zusmoff_tuning_v6') || localStorage.getItem('zusmoff_tuning_v5') || localStorage.getItem('zusmoff_tuning_v4') || 'null';
+      const legacyRaw = localStorage.getItem('zusmoff_tuning_v10') || localStorage.getItem('zusmoff_tuning_v9') || localStorage.getItem('zusmoff_tuning_v8') || localStorage.getItem('zusmoff_tuning_v7') || localStorage.getItem('zusmoff_tuning_v6') || localStorage.getItem('zusmoff_tuning_v5') || localStorage.getItem('zusmoff_tuning_v4') || 'null';
       const legacy = JSON.parse(legacyRaw) || {};
       const next = this.#clone(DEFAULT_TUNING);
       if (legacy.mapSpawns) next.mapSpawns = this.#clone(legacy.mapSpawns);
@@ -833,7 +862,7 @@ export class UIManager {
   }
 
   #saveTuning() {
-    localStorage.setItem('zusmoff_tuning_v10', JSON.stringify(this.tuning));
+    localStorage.setItem('zusmoff_tuning_v11', JSON.stringify(this.tuning));
   }
 
   #setSaveState(message, resetAfter = 0) {

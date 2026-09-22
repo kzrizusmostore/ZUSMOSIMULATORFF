@@ -3,6 +3,8 @@ export class MobileInput {
     this.moveX = 0;
     this.moveY = 0;
     this.run = false;
+    this.runButtonHeld = false;
+    this.dragSprint = false;
     this.crouch = false;
     this.prone = false;
     this.jumpQueued = false;
@@ -29,7 +31,8 @@ export class MobileInput {
 
   reset() {
     this.moveX = this.moveY = 0;
-    this.run = this.crouch = this.prone = false;
+    this.run = this.runButtonHeld = this.dragSprint = false;
+    this.crouch = this.prone = false;
     this.jumpQueued = false;
     this.cameraDX = this.cameraDY = 0;
     this.joystickPointer = this.cameraPointer = null;
@@ -51,11 +54,18 @@ export class MobileInput {
     return out;
   }
 
+  #syncRun() {
+    this.run = !!(this.runButtonHeld || this.dragSprint);
+    this.runButton.classList.toggle('active', this.run);
+  }
+
   #bind() {
     const endJoystick = (e) => {
       if (e.pointerId !== this.joystickPointer) return;
       this.joystickPointer = null;
       this.moveX = this.moveY = 0;
+      this.dragSprint = false;
+      this.#syncRun();
       this.knob.style.transform = 'translate(0px, 0px)';
     };
     this.joystick.addEventListener('pointerdown', (e) => {
@@ -89,10 +99,19 @@ export class MobileInput {
     this.cameraZone.addEventListener('pointerup', endCamera);
     this.cameraZone.addEventListener('pointercancel', endCamera);
 
-    const setRun = (v) => { if (!this.enabled) return; this.run = v; this.runButton.classList.toggle('active', v); };
-    this.runButton.addEventListener('pointerdown', (e) => { setRun(true); this.runButton.setPointerCapture?.(e.pointerId); e.preventDefault(); });
-    this.runButton.addEventListener('pointerup', () => setRun(false));
-    this.runButton.addEventListener('pointercancel', () => setRun(false));
+    const setRunButton = (v) => {
+      if (!this.enabled) return;
+      this.runButtonHeld = v;
+      this.#syncRun();
+    };
+    this.runButton.addEventListener('pointerdown', (e) => {
+      setRunButton(true);
+      this.runButton.setPointerCapture?.(e.pointerId);
+      e.preventDefault();
+    });
+    this.runButton.addEventListener('pointerup', () => setRunButton(false));
+    this.runButton.addEventListener('pointercancel', () => setRunButton(false));
+    this.runButton.addEventListener('lostpointercapture', () => setRunButton(false));
 
     this.jumpButton.addEventListener('pointerdown', (e) => {
       if (!this.enabled) return;
@@ -122,12 +141,19 @@ export class MobileInput {
     const cx = r.left + r.width / 2;
     const cy = r.top + r.height / 2;
     const radius = r.width * 0.34;
-    let dx = e.clientX - cx;
-    let dy = e.clientY - cy;
+    const rawDx = e.clientX - cx;
+    const rawDy = e.clientY - cy;
+    let dx = rawDx;
+    let dy = rawDy;
     const len = Math.hypot(dx, dy);
     if (len > radius) { dx = dx / len * radius; dy = dy / len * radius; }
     this.moveX = dx / radius;
     this.moveY = -dy / radius;
+
+    // Drag slightly above the normal joystick radius to sprint, matching the
+    // familiar mobile Free Fire control pattern. RUN button still works too.
+    this.dragSprint = rawDy < -radius * 1.12 && Math.abs(rawDx) < radius * 1.05;
+    this.#syncRun();
     this.knob.style.transform = `translate(${dx}px, ${dy}px)`;
   }
 }

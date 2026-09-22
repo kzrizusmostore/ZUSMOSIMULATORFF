@@ -19,7 +19,7 @@ export class Game {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x98a4ae);
     this.scene.fog = new THREE.Fog(0x98a4ae, 180, 520);
-    this.camera = new THREE.PerspectiveCamera(60, 1, 0.08, 520);
+    this.camera = new THREE.PerspectiveCamera(62, 1, 0.08, 520);
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
     this.renderer.setClearColor(0x98a4ae, 1);
     this.clock = new THREE.Clock();
@@ -164,7 +164,7 @@ export class Game {
         this.tuning,
         spawnYaw
       );
-      this.cameraRig.reset(spawn);
+      this.cameraRig.reset(spawn, spawnYaw, { stance: 'standing', grounded: true, speed: 0, scale: this.controller?.characterScale || 0.71 });
       this.#applyTuning();
       this.ui.updateLoading(100, 'Entering World...', total, total);
       await this.#nextFrame();
@@ -210,7 +210,7 @@ export class Game {
     const point = this.#resolveSpawnPoint(this.currentMap, config);
     const yaw = THREE.MathUtils.degToRad(config.yaw || 0);
     this.controller.setSpawn(point, yaw, true);
-    this.cameraRig.reset(point);
+    this.cameraRig.reset(point, yaw, { stance: this.controller?.stance || 'standing', grounded: true, speed: 0, scale: this.controller?.characterScale || 0.71 });
     return true;
   }
 
@@ -263,7 +263,13 @@ export class Game {
     if (this.gameActive && this.controller && this.characterManager.group) {
       this.controller.update(dt);
       const cameraDelta = this.input.consumeCameraDelta();
-      this.cameraRig.update(dt, this.characterManager.group.position, cameraDelta);
+      this.cameraRig.update(dt, this.characterManager.group.position, cameraDelta, {
+        yaw: this.characterManager.group.rotation.y,
+        stance: this.controller.stance,
+        grounded: this.controller.grounded,
+        speed: this.controller.speed,
+        scale: this.controller.characterScale
+      });
       this.#updateSun();
       this.ui.syncLiveSpawn?.(this.captureSpawn());
       this.#updateDebug(dt);

@@ -133,7 +133,7 @@ export class CharacterController {
         this.group.position.y = targetGroundY;
         this.verticalVelocity = 0;
         this.grounded = true;
-        if (!this.wasGrounded) this.landTimer = 0.20;
+        if (!this.wasGrounded) this.landTimer = 0.12;
       }
     } else {
       this.grounded = false;
