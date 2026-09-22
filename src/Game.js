@@ -36,14 +36,14 @@ export class Game {
     this.loadGeneration = 0;
     this.currentMap = null;
     this.currentCharacter = null;
-    this.currentGraphics = 'standard';
+    this.currentGraphics = 'hd';
     this.tuning = null;
     this.fps = 60;
     this.fpsTimer = 0;
     this.frameCount = 0;
     this.#createLights();
     this.#bindSystemEvents();
-    this.graphics.setQuality('standard');
+    this.graphics.setQuality('hd');
     this.loop = this.loop.bind(this);
     requestAnimationFrame(this.loop);
   }
@@ -91,7 +91,7 @@ export class Game {
 
     this.currentMap = mapDef;
     this.currentCharacter = charDef;
-    this.currentGraphics = selection.graphics === 'hd' ? 'hd' : 'standard';
+    this.currentGraphics = 'hd';
     this.tuning = selection.tuning || this.tuning;
     this.graphics.setQuality(this.currentGraphics);
     this.#applyTuning();
@@ -148,9 +148,10 @@ export class Game {
 
       this.ui.updateLoading(98, 'Preparing Textures...', total, total);
       await this.#nextFrame();
-      const groundOffset = this.tuning?.grounding?.groundOffset ?? 0.018;
-      const spawn = this.collision.findSpawn(mapDef.spawn?.x || 0, mapDef.spawn?.z || 0, groundOffset);
-      this.characterManager.spawn(spawn);
+      const spawnConfig = this.#getSpawnConfig(mapDef);
+      const spawn = this.#resolveSpawnPoint(mapDef, spawnConfig);
+      const spawnYaw = THREE.MathUtils.degToRad(spawnConfig.yaw || 0);
+      this.characterManager.spawn(spawn, spawnYaw);
       this.characterManager.setVisualTuning(this.tuning);
       this.animation = new AnimationController(characterInfo, this.characterManager.baseVisualY, this.tuning);
       this.controller = new CharacterController(
@@ -160,7 +161,8 @@ export class Game {
         this.collision,
         this.animation,
         spawn,
-        this.tuning
+        this.tuning,
+        spawnYaw
       );
       this.cameraRig.reset(spawn);
       this.#applyTuning();
@@ -181,8 +183,8 @@ export class Game {
     }
   }
 
-  setQuality(mode, tuning = null) {
-    this.currentGraphics = mode === 'hd' ? 'hd' : 'standard';
+  setQuality(_mode, tuning = null) {
+    this.currentGraphics = 'hd';
     if (tuning) this.tuning = tuning;
     this.graphics.setQuality(this.currentGraphics);
     this.#applyTuning();
@@ -192,6 +194,41 @@ export class Game {
   setTuning(tuning) {
     this.tuning = tuning;
     this.#applyTuning();
+  }
+
+  captureSpawn() {
+    if (!this.gameActive || !this.currentMap || !this.characterManager.group) return null;
+    const p = this.characterManager.group.position;
+    let yaw = THREE.MathUtils.radToDeg(this.characterManager.group.rotation.y);
+    yaw = ((yaw + 180) % 360 + 360) % 360 - 180;
+    return { mapId: this.currentMap.id, x: p.x, y: p.y, z: p.z, yaw };
+  }
+
+  teleportToSpawn(mapId, spawnConfig) {
+    if (!this.gameActive || !this.currentMap || this.currentMap.id !== mapId || !this.controller) return false;
+    const config = { ...this.#getSpawnConfig(this.currentMap), ...(spawnConfig || {}) };
+    const point = this.#resolveSpawnPoint(this.currentMap, config);
+    const yaw = THREE.MathUtils.degToRad(config.yaw || 0);
+    this.controller.setSpawn(point, yaw, true);
+    this.cameraRig.reset(point);
+    return true;
+  }
+
+  #getSpawnConfig(mapDef) {
+    const base = mapDef?.spawn || {};
+    const custom = this.tuning?.mapSpawns?.[mapDef?.id] || {};
+    return {
+      x: Number.isFinite(Number(custom.x)) ? Number(custom.x) : (Number(base.x) || 0),
+      y: Number.isFinite(Number(custom.y)) ? Number(custom.y) : (Number(base.y) || 0),
+      z: Number.isFinite(Number(custom.z)) ? Number(custom.z) : (Number(base.z) || 0),
+      yaw: Number.isFinite(Number(custom.yaw)) ? Number(custom.yaw) : (Number(base.yaw) || 0)
+    };
+  }
+
+  #resolveSpawnPoint(mapDef, config = this.#getSpawnConfig(mapDef)) {
+    const physicsOffset = this.tuning?.grounding?.groundOffset ?? 0.018;
+    const preferredY = Number.isFinite(Number(config.y)) ? Number(config.y) : null;
+    return this.collision.findSpawn(Number(config.x) || 0, Number(config.z) || 0, physicsOffset, preferredY);
   }
 
   #applyTuning() {
@@ -228,6 +265,7 @@ export class Game {
       const cameraDelta = this.input.consumeCameraDelta();
       this.cameraRig.update(dt, this.characterManager.group.position, cameraDelta);
       this.#updateSun();
+      this.ui.syncLiveSpawn?.(this.captureSpawn());
       this.#updateDebug(dt);
     }
     this.graphics.render(this.scene, this.camera);
@@ -269,6 +307,7 @@ Walk / Run: ${c.settings.walkSpeed.toFixed(1)} / ${c.settings.runSpeed.toFixed(1
 Char Scale: ${(this.tuning?.character?.scale ?? 1).toFixed(2)}x
 Foot Offset: ${(this.tuning?.character?.footOffset ?? 0).toFixed(3)} m
 Ground Offset: ${(c.grounding?.groundOffset ?? 0).toFixed(3)} m
+Spawn: ${this.#getSpawnConfig(this.currentMap).x.toFixed(1)}, ${this.#getSpawnConfig(this.currentMap).y.toFixed(1)}, ${this.#getSpawnConfig(this.currentMap).z.toFixed(1)} @ ${this.#getSpawnConfig(this.currentMap).yaw.toFixed(0)}°
 Grounded: ${c.grounded}
 Bones: ${this.characterManager.bones.size}
 Clips: ${this.characterManager.animations.length}`

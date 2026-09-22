@@ -76,13 +76,17 @@ export class UIManager {
     this.defaults = defaults;
     this.selectedMap = this.#valid(localStorage.getItem('zusmoff_map'), maps) || defaults.map;
     this.selectedCharacter = this.#valid(localStorage.getItem('zusmoff_character'), characters) || defaults.character;
-    this.graphics = ['standard', 'hd'].includes(localStorage.getItem('zusmoff_graphics')) ? localStorage.getItem('zusmoff_graphics') : defaults.graphics;
+    this.graphics = 'hd';
+    localStorage.setItem('zusmoff_graphics', 'hd');
     this.tuning = this.#loadTuning();
     this.#ensureMapSpawn(this.selectedMap);
     this.activeTuneTab = 'movement';
     this.handlers = {};
     this.lastStart = null;
     this.saveStateTimer = null;
+    this.spawnSaveTimer = null;
+    this.lastSpawnSyncAt = 0;
+    this.tuneDrag = null;
     this.screens = {
       menu: document.getElementById('screen-menu'),
       select: document.getElementById('screen-select'),
@@ -98,6 +102,7 @@ export class UIManager {
     this.#syncQuality();
     this.#bind();
     this.#syncFullscreenButtons();
+    this.#bindTuningDrag();
   }
 
   bootReady() {
@@ -156,19 +161,12 @@ export class UIManager {
     this.error.classList.add('hidden');
     this.hud.classList.remove('hidden');
     document.getElementById('hud-map').textContent = `${map.shortName} • ${map.name.toUpperCase()}`;
-    this.updateHUDQuality(graphics);
     this.debug.classList.toggle('hidden', !debugEnabled);
     this.#syncQuality();
     this.#syncFullscreenButtons();
   }
 
-  updateHUDQuality(graphics = this.graphics) {
-    const el = document.getElementById('hud-quality');
-    if (!el) return;
-    const p = this.tuning.graphics.profiles[graphics];
-    const sharp = Math.round((p?.map?.sharpness || 0) * 100);
-    el.textContent = graphics === 'hd' ? `HD • SHARP ${sharp}%` : 'STANDARD';
-  }
+  updateHUDQuality() {}
 
   hideHUD() { this.hud.classList.add('hidden'); }
   updateDebug(text) { if (!this.debug.classList.contains('hidden')) this.debug.textContent = text; }
@@ -176,6 +174,7 @@ export class UIManager {
   openTuning() {
     this.#renderTuningControls();
     this.tuningOverlay.classList.remove('hidden');
+    this.#applySavedTunePosition();
     this.#setSaveState('LIVE');
   }
 
@@ -185,7 +184,6 @@ export class UIManager {
     document.getElementById('btn-play').addEventListener('click', () => this.showScreen('select'));
     document.getElementById('btn-settings').addEventListener('click', () => this.showScreen('settings'));
     document.querySelectorAll('[data-back="menu"]').forEach((b) => b.addEventListener('click', () => this.showScreen('menu')));
-    document.querySelectorAll('[data-quality]').forEach((b) => b.addEventListener('click', () => this.setQuality(b.dataset.quality)));
     document.querySelectorAll('[data-fullscreen]').forEach((b) => b.addEventListener('click', () => this.toggleFullscreen()));
     document.querySelectorAll('[data-open-tuning]').forEach((b) => b.addEventListener('click', () => this.openTuning()));
     document.querySelectorAll('[data-close-tuning]').forEach((b) => b.addEventListener('click', () => this.closeTuning()));
@@ -204,6 +202,77 @@ export class UIManager {
     document.getElementById('btn-exit').addEventListener('click', () => this.handlers.exit?.());
     document.addEventListener('fullscreenchange', () => this.#syncFullscreenButtons());
     document.addEventListener('webkitfullscreenchange', () => this.#syncFullscreenButtons());
+    window.addEventListener('resize', () => this.#clampTunePosition());
+  }
+
+  #bindTuningDrag() {
+    const panel = this.tuningOverlay?.querySelector('.tuning-panel');
+    const handle = this.tuningOverlay?.querySelector('.tuning-head');
+    if (!panel || !handle) return;
+    handle.classList.add('tune-drag-handle');
+
+    handle.addEventListener('pointerdown', (event) => {
+      if (event.target.closest('button, input, select, textarea')) return;
+      const rect = panel.getBoundingClientRect();
+      this.tuneDrag = { pointerId: event.pointerId, dx: event.clientX - rect.left, dy: event.clientY - rect.top };
+      handle.setPointerCapture?.(event.pointerId);
+      panel.classList.add('is-dragging');
+      event.preventDefault();
+    });
+
+    handle.addEventListener('pointermove', (event) => {
+      if (!this.tuneDrag || this.tuneDrag.pointerId !== event.pointerId) return;
+      const w = panel.offsetWidth;
+      const h = panel.offsetHeight;
+      const maxX = Math.max(4, window.innerWidth - w - 4);
+      const maxY = Math.max(4, window.innerHeight - h - 4);
+      const x = Math.min(maxX, Math.max(4, event.clientX - this.tuneDrag.dx));
+      const y = Math.min(maxY, Math.max(4, event.clientY - this.tuneDrag.dy));
+      panel.style.left = `${x}px`;
+      panel.style.top = `${y}px`;
+      panel.style.right = 'auto';
+      panel.style.bottom = 'auto';
+    });
+
+    const finish = (event) => {
+      if (!this.tuneDrag || this.tuneDrag.pointerId !== event.pointerId) return;
+      const rect = panel.getBoundingClientRect();
+      localStorage.setItem('zusmoff_tune_position_v7', JSON.stringify({ x: Math.round(rect.left), y: Math.round(rect.top) }));
+      this.tuneDrag = null;
+      panel.classList.remove('is-dragging');
+      try { handle.releasePointerCapture?.(event.pointerId); } catch (_) {}
+    };
+    handle.addEventListener('pointerup', finish);
+    handle.addEventListener('pointercancel', finish);
+  }
+
+  #applySavedTunePosition() {
+    const panel = this.tuningOverlay?.querySelector('.tuning-panel');
+    if (!panel) return;
+    try {
+      const pos = JSON.parse(localStorage.getItem('zusmoff_tune_position_v7') || 'null');
+      if (pos && Number.isFinite(pos.x) && Number.isFinite(pos.y)) {
+        panel.style.left = `${pos.x}px`;
+        panel.style.top = `${pos.y}px`;
+        panel.style.right = 'auto';
+        panel.style.bottom = 'auto';
+      }
+    } catch (_) {}
+    requestAnimationFrame(() => this.#clampTunePosition());
+  }
+
+  #clampTunePosition() {
+    const panel = this.tuningOverlay?.querySelector('.tuning-panel');
+    if (!panel || this.tuningOverlay.classList.contains('hidden')) return;
+    const rect = panel.getBoundingClientRect();
+    const maxX = Math.max(4, window.innerWidth - rect.width - 4);
+    const maxY = Math.max(4, window.innerHeight - rect.height - 4);
+    const x = Math.min(maxX, Math.max(4, rect.left));
+    const y = Math.min(maxY, Math.max(4, rect.top));
+    panel.style.left = `${x}px`;
+    panel.style.top = `${y}px`;
+    panel.style.right = 'auto';
+    panel.style.bottom = 'auto';
   }
 
   async toggleFullscreen() {
@@ -244,28 +313,19 @@ export class UIManager {
     document.querySelectorAll('.hud-fullscreen').forEach((button) => { button.textContent = active ? 'WINDOW' : 'FULL'; });
   }
 
-  setQuality(mode) {
-    this.graphics = mode === 'hd' ? 'hd' : 'standard';
-    localStorage.setItem('zusmoff_graphics', this.graphics);
-    this.#syncQuality();
-    this.#renderTuningControls();
-    this.handlers.quality?.(this.graphics, this.#clone(this.tuning));
-    this.updateHUDQuality(this.graphics);
+  setQuality(_mode = 'hd') {
+    this.graphics = 'hd';
+    localStorage.setItem('zusmoff_graphics', 'hd');
+    this.handlers.quality?.('hd', this.#clone(this.tuning));
   }
 
   #syncQuality() {
-    document.querySelectorAll('[data-quality]').forEach((b) => b.classList.toggle('active', b.dataset.quality === this.graphics));
-    const text = this.graphics === 'hd'
-      ? 'HD aktif: resolusi/filter lebih tinggi + sharpening default 50%. Semua nilai masih bisa dituning.'
-      : 'STANDARD aktif: rendering lebih ringan, sharpening default OFF, dengan brightness yang lebih kalem.';
-    document.getElementById('quality-note').textContent = text;
-    document.getElementById('settings-quality-note').textContent = text;
-    const label = document.getElementById('tuning-profile-label');
-    if (label) label.textContent = this.graphics.toUpperCase();
+    this.graphics = 'hd';
+    localStorage.setItem('zusmoff_graphics', 'hd');
   }
 
   #getTuneGroups() {
-    const profile = `graphics.profiles.${this.graphics}`;
+    const profile = 'graphics.profiles.hd';
     const mapDef = this.maps.find((m) => m.id === this.selectedMap) || this.maps[0];
     const charDef = this.characters.find((c) => c.id === this.selectedCharacter) || this.characters[0];
     const spawn = this.#ensureMapSpawn(mapDef?.id);
@@ -336,7 +396,7 @@ export class UIManager {
         spawn
       },
       {
-        id: 'world', label: 'LIGHT', title: 'WORLD LIGHTING', subtitle: `Lighting untuk mode ${this.graphics.toUpperCase()}.`,
+        id: 'world', label: 'LIGHT', title: 'WORLD LIGHTING', subtitle: 'Atur pencahayaan dunia secara live.',
         controls: [
           ['Exposure', `${profile}.exposure`, 0.65, 1.65, 0.01, ''],
           ['Hemisphere', `${profile}.lighting.hemisphere`, 0.0, 3.0, 0.01, ''],
@@ -346,11 +406,11 @@ export class UIManager {
         ]
       },
       {
-        id: 'map', label: 'MAP', title: 'MAP FILTER', subtitle: `Filter ${mapDef?.name || 'map'} untuk ${this.graphics.toUpperCase()}.`,
+        id: 'map', label: 'MAP', title: 'MAP FILTER', subtitle: `Filter ${mapDef?.name || 'map'} secara live.`,
         controls: FILTER_CONTROLS.map((c) => [c[0], `${profile}.map.${c[1]}`, ...c.slice(2)])
       },
       {
-        id: 'charfilter', label: 'CHAR', title: 'CHARACTER FILTER', subtitle: `Filter ${charDef?.name || 'character'} untuk ${this.graphics.toUpperCase()}.`,
+        id: 'charfilter', label: 'CHAR', title: 'CHARACTER FILTER', subtitle: `Filter ${charDef?.name || 'character'} secara live.`,
         controls: FILTER_CONTROLS.map((c) => [c[0], `${profile}.character.${c[1]}`, ...c.slice(2)])
       }
     ];
@@ -386,9 +446,6 @@ export class UIManager {
       root.appendChild(group);
     }
 
-    const label = document.getElementById('tuning-profile-label');
-    if (label) label.textContent = this.graphics.toUpperCase();
-    this.#syncQuality();
   }
 
   #makeGroup(title, subtitle, controls) {
@@ -415,7 +472,7 @@ export class UIManager {
           <span class="slider-label">${label}</span>
           <div class="manual-value">
             <button type="button" class="value-step" data-dir="-1" aria-label="Decrease ${label}">−</button>
-            <input class="value-number" type="number" inputmode="decimal" min="${displayMin}" max="${displayMax}" step="${displayStep}" value="${formatDisplay(displayInitial)}" aria-label="${label} manual value">
+            <input class="value-number" data-setting-path="${path}" type="number" inputmode="decimal" min="${displayMin}" max="${displayMax}" step="${displayStep}" value="${formatDisplay(displayInitial)}" aria-label="${label} manual value">
             <span class="value-unit">${isPercent ? '%' : (suffix || '').trim()}</span>
             <button type="button" class="value-step" data-dir="1" aria-label="Increase ${label}">+</button>
           </div>
@@ -468,53 +525,43 @@ export class UIManager {
 
   #appendSpawnActions(group, mapId) {
     const actions = document.createElement('div');
-    actions.className = 'spawn-tools';
+    actions.className = 'spawn-tools auto-spawn-tools';
     actions.innerHTML = `
       <div class="spawn-tools-head">
-        <b>SPAWN MAP</b>
-        <span id="spawn-live-note">Ubah angka tanpa memindahkan karakter. Pakai posisi saat ini jika sudah menemukan lokasi yang pas.</span>
+        <b>AUTO SPAWN FOLLOW</b>
+        <span id="spawn-live-note">Posisi spawn mengikuti karakter secara otomatis saat bergerak.</span>
       </div>
-      <div class="spawn-actions">
-        <button type="button" class="mini-action primary" data-spawn-capture>PAKAI POSISI SAAT INI</button>
-        <button type="button" class="mini-action" data-spawn-test>TELEPORT TEST</button>
-        <button type="button" class="mini-action danger-soft" data-spawn-reset>RESET</button>
-      </div>`;
-
-    const note = actions.querySelector('#spawn-live-note');
-    actions.querySelector('[data-spawn-capture]').addEventListener('click', () => {
-      const current = this.handlers.captureSpawn?.();
-      if (!current || current.mapId !== mapId) {
-        note.textContent = 'Masuk ke map ini dulu, jalan ke lokasi yang diinginkan, lalu tekan lagi.';
-        return;
-      }
-      const spawn = this.#ensureMapSpawn(mapId);
-      spawn.x = Number(current.x.toFixed(2));
-      spawn.z = Number(current.z.toFixed(2));
-      spawn.y = Number(current.y.toFixed(2));
-      spawn.yaw = Math.round(current.yaw || 0);
-      this.#saveTuning();
-      this.handlers.tuning?.(this.#clone(this.tuning));
-      this.#renderTuningControls();
-      this.#setSaveState('SPAWN TERSIMPAN • POSISI TETAP', 1500);
-      const refreshed = document.getElementById('spawn-live-note');
-      if (refreshed) refreshed.textContent = `Tersimpan: X ${spawn.x.toFixed(2)} • Y ${spawn.y.toFixed(2)} • Z ${spawn.z.toFixed(2)} • ${spawn.yaw}°`;
-    });
-
-    actions.querySelector('[data-spawn-test]').addEventListener('click', () => {
-      const ok = this.handlers.teleportSpawn?.(mapId, this.#clone(this.#ensureMapSpawn(mapId)));
-      note.textContent = ok ? 'Teleported to saved spawn.' : 'Start this map first to test its spawn.';
-    });
-
-    actions.querySelector('[data-spawn-reset]').addEventListener('click', () => {
-      this.tuning.mapSpawns[mapId] = this.#defaultMapSpawn(mapId);
-      this.#saveTuning();
-      this.handlers.tuning?.(this.#clone(this.tuning));
-      this.#renderTuningControls();
-      const refreshed = document.getElementById('spawn-live-note');
-      if (refreshed) refreshed.textContent = 'Spawn reset to this map registry default.';
-    });
-
+      <div class="spawn-live-pill"><i></i><span>LIVE • MAP ${mapId || '-'}</span></div>`;
     group.appendChild(actions);
+  }
+
+  syncLiveSpawn(snapshot) {
+    if (!snapshot?.mapId) return;
+    const now = performance.now();
+    if (now - this.lastSpawnSyncAt < 90) return;
+    this.lastSpawnSyncAt = now;
+
+    const spawn = this.#ensureMapSpawn(snapshot.mapId);
+    spawn.x = Number(snapshot.x.toFixed(2));
+    spawn.y = Number(snapshot.y.toFixed(2));
+    spawn.z = Number(snapshot.z.toFixed(2));
+    spawn.yaw = Math.round(snapshot.yaw || 0);
+
+    if (!this.tuningOverlay.classList.contains('hidden') && this.activeTuneTab === 'spawn' && snapshot.mapId === this.selectedMap) {
+      const base = `mapSpawns.${snapshot.mapId}`;
+      const vals = { [`${base}.x`]: spawn.x, [`${base}.y`]: spawn.y, [`${base}.z`]: spawn.z, [`${base}.yaw`]: spawn.yaw };
+      for (const [path, value] of Object.entries(vals)) {
+        const range = this.tuningOverlay.querySelector(`.setting-range[data-setting-path="${path}"]`);
+        if (range) range.value = String(value);
+        const number = this.tuningOverlay.querySelector(`.value-number[data-setting-path="${path}"]`);
+        if (number && document.activeElement !== number) number.value = path.endsWith('.yaw') ? String(Math.round(value)) : Number(value).toFixed(2);
+      }
+      const note = document.getElementById('spawn-live-note');
+      if (note) note.textContent = `X ${spawn.x.toFixed(2)} • Y ${spawn.y.toFixed(2)} • Z ${spawn.z.toFixed(2)} • ${spawn.yaw}°`;
+    }
+
+    if (this.spawnSaveTimer) clearTimeout(this.spawnSaveTimer);
+    this.spawnSaveTimer = setTimeout(() => this.#saveTuning(), 450);
   }
 
   #defaultMapSpawn(mapId) {
@@ -547,7 +594,7 @@ export class UIManager {
 
   #loadTuning() {
     try {
-      const raw = localStorage.getItem('zusmoff_tuning_v6') || localStorage.getItem('zusmoff_tuning_v5') || localStorage.getItem('zusmoff_tuning_v4') || 'null';
+      const raw = localStorage.getItem('zusmoff_tuning_v7') || localStorage.getItem('zusmoff_tuning_v6') || localStorage.getItem('zusmoff_tuning_v5') || localStorage.getItem('zusmoff_tuning_v4') || 'null';
       const saved = JSON.parse(raw);
       return this.#deepMerge(this.#clone(DEFAULT_TUNING), saved || {});
     } catch (_) {
@@ -556,7 +603,7 @@ export class UIManager {
   }
 
   #saveTuning() {
-    localStorage.setItem('zusmoff_tuning_v6', JSON.stringify(this.tuning));
+    localStorage.setItem('zusmoff_tuning_v7', JSON.stringify(this.tuning));
   }
 
   #setSaveState(message, resetAfter = 0) {

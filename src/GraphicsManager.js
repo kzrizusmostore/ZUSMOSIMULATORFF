@@ -15,7 +15,7 @@ export class GraphicsManager {
   constructor(renderer, camera) {
     this.renderer = renderer;
     this.camera = camera;
-    this.quality = 'standard';
+    this.quality = 'hd';
     this.trackedObjects = new Map();
     this.lights = [];
     this.filterProfiles = {
@@ -31,7 +31,7 @@ export class GraphicsManager {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.05;
+    this.renderer.toneMappingExposure = 1.16;
   }
 
   setLights(lights) {
