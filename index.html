@@ -65,7 +65,10 @@
           </div>
           <small id="quality-note">Standard: performance priority</small>
         </div>
-        <button id="btn-start" class="btn primary full">START GAME</button>
+        <div class="select-actions">
+          <button class="btn ghost" data-open-tuning>TUNE FILTER / SPEED / ANIMATION</button>
+          <button id="btn-start" class="btn primary">START GAME</button>
+        </div>
       </div>
     </section>
 
@@ -82,6 +85,11 @@
             <button data-quality="hd">HD</button>
           </div>
           <p id="settings-quality-note">Standard uses original texture clarity and lighter rendering.</p>
+        </div>
+        <div class="setting-block">
+          <span>ADVANCED TUNING</span>
+          <button class="btn primary full" data-open-tuning>OPEN LIVE TUNING</button>
+          <p>Atur filter Map/Naruto, lighting, speed, dan procedural animation. Nilai disimpan otomatis.</p>
         </div>
         <div class="setting-block">
           <span>DISPLAY</span>
@@ -112,10 +120,33 @@
       </div>
     </section>
 
+    <section id="tuning-overlay" class="overlay tuning-overlay hidden">
+      <div class="tuning-panel glass">
+        <div class="tuning-head">
+          <div>
+            <div class="eyebrow">LIVE CUSTOMIZER</div>
+            <h1>TUNE • <span id="tuning-profile-label">STANDARD</span></h1>
+          </div>
+          <button class="icon-btn tune-close" data-close-tuning aria-label="Close">×</button>
+        </div>
+        <p class="tuning-help">Geser slider sambil bermain. Map dan Naruto punya filter terpisah. Ganti STANDARD / HD untuk mengedit profil masing-masing.</p>
+        <div class="tune-quality segmented large">
+          <button data-quality="standard">STANDARD</button>
+          <button data-quality="hd">HD</button>
+        </div>
+        <div id="tuning-controls" class="tuning-controls"></div>
+        <div class="tuning-footer">
+          <button id="btn-reset-tuning" class="btn ghost">RESET DEFAULT</button>
+          <button class="btn primary" data-close-tuning>DONE</button>
+        </div>
+      </div>
+    </section>
+
     <section id="hud" class="hidden">
       <div class="top-hud">
         <span id="hud-map">CT</span>
         <span id="hud-quality">STANDARD</span>
+        <button class="hud-chip tune-chip" data-open-tuning aria-label="Tune settings">TUNE</button>
         <button class="hud-chip hud-fullscreen" data-fullscreen aria-label="Fullscreen">FULL</button>
         <button id="btn-exit" class="hud-chip">MENU</button>
       </div>
