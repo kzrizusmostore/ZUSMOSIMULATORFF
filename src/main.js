@@ -1,21 +1,24 @@
+import { MAPS, CHARACTERS, DEFAULTS } from './config/registry.js';
+import { UIManager } from './UIManager.js';
+import { Game } from './Game.js';
 
-let value=0;
-const messages=[
-"Loading Character...",
-"Loading Clock Tower...",
-"Preparing Skeleton...",
-"Preparing Textures...",
-"Entering World..."
-];
+window.__ZUSMO_BOOTED = true;
 
-const timer=setInterval(()=>{
- value++;
- document.getElementById("progress").style.width=value+"%";
- document.getElementById("percent").innerText=value+"%";
- document.getElementById("status").innerText=messages[Math.min(Math.floor(value/20),4)];
- if(value>=100){
-  clearInterval(timer);
-  document.getElementById("loading").classList.add("hidden");
-  document.getElementById("menu").classList.remove("hidden");
- }
-},35);
+try {
+  const ui = new UIManager(MAPS, CHARACTERS, DEFAULTS);
+  const canvas = document.getElementById('game-canvas');
+  const game = new Game(canvas, ui, MAPS, CHARACTERS);
+  ui.setHandlers({
+    start: (selection) => game.start(selection),
+    exit: () => game.exitToMenu(),
+    quality: (mode) => game.setQuality(mode)
+  });
+  ui.bootReady();
+  console.info('[ZUSMO FF] Engine ready');
+} catch (error) {
+  console.error('[ZUSMO FF] Boot error', error);
+  const boot = document.getElementById('engine-boot');
+  const text = document.getElementById('engine-boot-text');
+  boot?.classList.remove('hidden');
+  if (text) text.textContent = `Boot failed: ${error?.message || error}`;
+}
