@@ -715,3 +715,25 @@ button,input,#joystick,#camera-zone{ -webkit-touch-callout:none; }
    Ancestors must allow pan-y or the scroll container cannot scroll natively. */
 .tuning-overlay,.tuning-panel{touch-action:pan-y!important}
 #btn-move-tuning,.tuning-tab,.value-step,.tune-close,.tuning-footer button{touch-action:none!important}
+
+/* V13 — safer tune footprint and hold-repeat controls */
+.tuning-panel{
+  width:min(278px,calc(100dvw - 24px))!important;
+  height:min(300px,calc(100dvh - 24px))!important;
+  max-width:calc(100dvw - 24px)!important;
+  max-height:calc(100dvh - 24px)!important;
+}
+@media (max-width:760px) and (orientation:landscape){
+  .tuning-panel{
+    width:min(268px,calc(100dvw - 24px))!important;
+    height:min(284px,calc(100dvh - 20px))!important;
+  }
+}
+@media (orientation:portrait){
+  .tuning-panel{
+    width:min(286px,calc(100dvw - 24px))!important;
+    height:min(326px,calc(100dvh - 24px))!important;
+  }
+}
+.value-step{touch-action:none!important;-webkit-touch-callout:none!important}
+.menu-shell::after{content:"V13"!important}
