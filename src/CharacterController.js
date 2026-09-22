@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 
 const DEFAULT_MOVEMENT = {
-  walkSpeed: 4.2,
-  runSpeed: 6.8,
+  walkSpeed: 4.0,
+  runSpeed: 5.15,
   crouchSpeed: 1.8,
   proneSpeed: 0.9,
   acceleration: 14.0,
@@ -152,7 +152,7 @@ export class CharacterController {
     else if (this.stance === 'prone') this.state = this.speed > 0.10 ? 'PRONE_CRAWL' : 'PRONE_IDLE';
     else if (this.stance === 'crouch') this.state = this.speed > 0.10 ? 'CROUCH_WALK' : 'CROUCH_IDLE';
     else if (this.speed < 0.16 || inputMagnitude < 0.045) this.state = 'IDLE';
-    else if (this.input.run && this.speed > Math.max(this.settings.walkSpeed * 1.12, 4.5)) this.state = 'RUN';
+    else if (this.input.run && this.speed > Math.max(this.settings.walkSpeed * 1.04, this.settings.runSpeed * 0.82)) this.state = 'RUN';
     else this.state = 'WALK';
   }
 
