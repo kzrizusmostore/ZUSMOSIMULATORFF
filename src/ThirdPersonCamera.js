@@ -5,12 +5,10 @@ export class ThirdPersonCamera {
     this.camera = camera;
     this.collision = collisionSystem;
 
-    // yaw = the actual rendered camera heading.
-    // controlYaw = the heading used by the movement controller. Keeping these
-    // separate prevents a permanent turning loop when the camera auto-locks
-    // behind a character that is moving sideways.
+    // Rendered camera heading. Movement basis is derived from the actual
+    // rendered camera-to-character direction so joystick directions can never
+    // drift 180 degrees away from what the player sees on screen.
     this.yaw = 0;
-    this.controlYaw = 0;
     this.pitch = -0.075;
 
     this.baseDistance = 3.55;
@@ -35,7 +33,6 @@ export class ThirdPersonCamera {
   reset(characterPosition, characterYaw = 0, context = null) {
     const heading = Number.isFinite(characterYaw) ? characterYaw : 0;
     this.yaw = heading;
-    this.controlYaw = heading;
     this.pitch = -0.075;
     this.wasManual = false;
 
@@ -63,11 +60,9 @@ export class ThirdPersonCamera {
     const moveX = Number(context?.moveX) || 0;
 
     if (manual) {
-      // Free-look exists ONLY while the camera touch is active. While manually
-      // looking around, movement remains camera-relative to the current view.
+      // Free-look exists ONLY while the camera touch is active.
       this.yaw -= dragX * this.sensitivity;
       this.pitch -= dragY * this.sensitivity;
-      this.controlYaw = this.yaw;
     } else {
       // V12 core fix: no idle delay and no speed/grounded condition. Whenever
       // the user is not touching the camera, the view immediately returns to
@@ -78,13 +73,6 @@ export class ThirdPersonCamera {
       // view seen in the user's recording.
       this.yaw = characterYaw;
 
-      // When idle, the movement basis follows the locked-behind camera. While
-      // moving laterally we keep the basis stable so a held left/right stick
-      // does not create an endless camera/character steering spiral. Mostly
-      // forward input is safe to keep synchronized continuously.
-      if (!moving || Math.abs(moveX) < 0.22) {
-        this.controlYaw = this.yaw;
-      }
     }
     this.wasManual = manual;
     this.pitch = THREE.MathUtils.clamp(this.pitch, -0.52, 0.38);
@@ -148,10 +136,10 @@ export class ThirdPersonCamera {
   }
 
   getPlanarBasis(forwardOut, rightOut) {
-    // Do NOT derive movement from the rendered camera every frame while the
-    // camera is auto-rotating behind the character; that produces circular
-    // steering. controlYaw is synchronized when appropriate in update().
-    forwardOut.set(Math.sin(this.controlYaw), 0, Math.cos(this.controlYaw)).normalize();
+    // Exact camera heading, deliberately ignoring the small shoulder offset.
+    // For +Y up: camera forward=(sin(yaw),0,cos(yaw)) and screen-right is
+    // (forward.z,0,-forward.x). This preserves UP/DOWN/LEFT/RIGHT signs.
+    forwardOut.set(Math.sin(this.yaw), 0, Math.cos(this.yaw)).normalize();
     rightOut.set(forwardOut.z, 0, -forwardOut.x).normalize();
   }
 }

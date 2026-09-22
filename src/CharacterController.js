@@ -8,7 +8,7 @@ const DEFAULT_MOVEMENT = {
   acceleration: 14.0,
   deceleration: 18.0,
   turnSpeed: 14.0,
-  jumpPower: 7.25,
+  jumpPower: 4.80,
   gravity: 22.5
 };
 
@@ -31,6 +31,13 @@ export class CharacterController {
     this.velocity = new THREE.Vector3();
     this.forward = new THREE.Vector3();
     this.right = new THREE.Vector3();
+    // Freeze the camera-relative basis for one joystick gesture. With a camera
+    // that is hard-locked behind the character, recomputing RIGHT every frame
+    // creates a feedback loop: holding RIGHT rotates the character, rotates the
+    // camera, then rotates RIGHT again. The result feels inverted/spinning.
+    this.gestureForward = new THREE.Vector3(0, 0, 1);
+    this.gestureRight = new THREE.Vector3(1, 0, 0);
+    this.moveGestureActive = false;
     this.desired = new THREE.Vector3();
     this.desiredVelocity = new THREE.Vector3();
     this.delta = new THREE.Vector3();
@@ -72,8 +79,28 @@ export class CharacterController {
     else if (this.input.crouch) this.stance = 'crouch';
     else this.stance = 'standing';
 
-    this.cameraRig.getPlanarBasis(this.forward, this.right);
     const mag = Math.min(1, Math.hypot(this.input.moveX, this.input.moveY));
+
+    // Screen-correct directional mapping:
+    //   joystick UP    -> screen/camera forward
+    //   joystick DOWN  -> screen/camera backward
+    //   joystick RIGHT -> screen/camera right
+    //   joystick LEFT  -> screen/camera left
+    //
+    // While auto-camera is locked behind the character we capture this basis
+    // once at the start of the joystick gesture. That breaks the camera/turn
+    // feedback loop that made directions reverse in V12. If the user is
+    // actively free-looking, use the live camera basis so movement follows it.
+    const cameraManual = this.input.cameraPointer !== null;
+    if (mag > 0.065 && (!this.moveGestureActive || cameraManual)) {
+      this.cameraRig.getPlanarBasis(this.gestureForward, this.gestureRight);
+      this.moveGestureActive = true;
+    } else if (mag < 0.035) {
+      this.moveGestureActive = false;
+    }
+    this.forward.copy(this.gestureForward);
+    this.right.copy(this.gestureRight);
+
     this.desired.set(0, 0, 0)
       .addScaledVector(this.forward, this.input.moveY)
       .addScaledVector(this.right, this.input.moveX);
@@ -164,5 +191,6 @@ export class CharacterController {
     this.verticalVelocity = 0;
     this.grounded = true;
     this.landTimer = 0;
+    this.moveGestureActive = false;
   }
 }
