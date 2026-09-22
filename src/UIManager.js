@@ -188,6 +188,7 @@ export class UIManager {
     document.querySelectorAll('[data-open-tuning]').forEach((b) => b.addEventListener('click', () => this.openTuning()));
     document.querySelectorAll('[data-close-tuning]').forEach((b) => b.addEventListener('click', () => this.closeTuning()));
     document.getElementById('btn-reset-tuning').addEventListener('click', () => this.#resetTuning());
+    document.getElementById('btn-copy-tuning')?.addEventListener('click', () => this.#copyTuningSettings());
     document.getElementById('btn-save-tuning')?.addEventListener('click', () => {
       this.#saveTuning();
       this.#setSaveState('TERSIMPAN • POSISI TETAP', 1500);
@@ -477,19 +478,27 @@ export class UIManager {
             <button type="button" class="value-step" data-dir="1" aria-label="Increase ${label}">+</button>
           </div>
         </div>
-        <input class="setting-range" type="range" min="${min}" max="${max}" step="${step}" value="${initial}" data-setting-path="${path}" aria-label="${label}">`;
+        <div class="setting-slider" role="slider" tabindex="0"
+          data-setting-path="${path}" data-min="${min}" data-max="${max}" data-step="${step}" data-value="${initial}"
+          aria-label="${label}" aria-valuemin="${min}" aria-valuemax="${max}" aria-valuenow="${initial}">
+          <span class="setting-slider-fill"></span><span class="setting-slider-thumb"></span>
+        </div>`;
 
-      const range = row.querySelector('.setting-range');
+      const slider = row.querySelector('.setting-slider');
       const number = row.querySelector('.value-number');
       const stepButtons = row.querySelectorAll('.value-step');
 
       const clampInternal = (v) => Math.min(Number(max), Math.max(Number(min), v));
       const clampDisplay = (v) => Math.min(displayMax, Math.max(displayMin, v));
-      const applyInternal = (rawInternal, source = 'range') => {
+      const snapInternal = (v) => {
+        const snapped = Number(min) + Math.round((clampInternal(v) - Number(min)) / Number(step)) * Number(step);
+        return clampInternal(Number(snapped.toFixed(8)));
+      };
+      const applyInternal = (rawInternal, source = 'slider') => {
         if (!Number.isFinite(Number(rawInternal))) return;
-        const next = clampInternal(Number(rawInternal));
+        const next = snapInternal(Number(rawInternal));
         this.#setByPath(this.tuning, path, next);
-        range.value = String(next);
+        this.#setSliderValue(slider, next);
         if (source !== 'number-typing') number.value = formatDisplay(next * displayScale);
         this.#saveTuning();
         this.handlers.tuning?.(this.#clone(this.tuning));
@@ -497,7 +506,8 @@ export class UIManager {
         this.#setSaveState('LIVE • TERSIMPAN', 850);
       };
 
-      range.addEventListener('input', () => applyInternal(range.value, 'range'));
+      this.#setSliderValue(slider, initial);
+      this.#bindIntentSlider(slider, applyInternal);
       number.addEventListener('input', () => {
         if (number.value === '' || number.value === '-' || number.value === '.') return;
         const displayValue = clampDisplay(Number(number.value));
@@ -521,6 +531,118 @@ export class UIManager {
     }
     group.appendChild(list);
     return group;
+  }
+
+  #setSliderValue(slider, value) {
+    if (!slider) return;
+    const min = Number(slider.dataset.min);
+    const max = Number(slider.dataset.max);
+    const next = Math.min(max, Math.max(min, Number(value)));
+    const pct = max > min ? ((next - min) / (max - min)) * 100 : 0;
+    slider.dataset.value = String(next);
+    slider.style.setProperty('--slider-pct', `${pct}%`);
+    slider.setAttribute('aria-valuenow', String(next));
+  }
+
+  #bindIntentSlider(slider, applyValue) {
+    let gesture = null;
+    const valueFromX = (clientX) => {
+      const rect = slider.getBoundingClientRect();
+      const min = Number(slider.dataset.min);
+      const max = Number(slider.dataset.max);
+      const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / Math.max(1, rect.width)));
+      return min + (max - min) * ratio;
+    };
+    const cleanup = (event) => {
+      if (!gesture || (event && gesture.pointerId !== event.pointerId)) return;
+      try { slider.releasePointerCapture?.(gesture.pointerId); } catch (_) {}
+      slider.classList.remove('is-adjusting');
+      gesture = null;
+    };
+
+    slider.addEventListener('pointerdown', (event) => {
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+      gesture = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, mode: event.pointerType === 'mouse' ? 'horizontal' : 'pending' };
+      if (gesture.mode === 'horizontal') {
+        slider.setPointerCapture?.(event.pointerId);
+        slider.classList.add('is-adjusting');
+        applyValue(valueFromX(event.clientX), 'slider');
+        event.preventDefault();
+      }
+    });
+
+    slider.addEventListener('pointermove', (event) => {
+      if (!gesture || gesture.pointerId !== event.pointerId) return;
+      const dx = event.clientX - gesture.x;
+      const dy = event.clientY - gesture.y;
+      if (gesture.mode === 'pending') {
+        if (Math.abs(dy) >= 7 && Math.abs(dy) > Math.abs(dx) * 1.15) {
+          gesture.mode = 'vertical';
+          return;
+        }
+        if (Math.abs(dx) >= 7 && Math.abs(dx) > Math.abs(dy) * 1.15) {
+          gesture.mode = 'horizontal';
+          slider.setPointerCapture?.(event.pointerId);
+          slider.classList.add('is-adjusting');
+        } else {
+          return;
+        }
+      }
+      if (gesture.mode !== 'horizontal') return;
+      event.preventDefault();
+      applyValue(valueFromX(event.clientX), 'slider');
+    });
+
+    slider.addEventListener('pointerup', (event) => {
+      if (!gesture || gesture.pointerId !== event.pointerId) return;
+      if (gesture.mode === 'pending') {
+        const dx = event.clientX - gesture.x;
+        const dy = event.clientY - gesture.y;
+        if (Math.hypot(dx, dy) < 6) applyValue(valueFromX(event.clientX), 'slider');
+      }
+      cleanup(event);
+    });
+    slider.addEventListener('pointercancel', cleanup);
+    slider.addEventListener('keydown', (event) => {
+      const step = Number(slider.dataset.step) || 0.01;
+      const current = Number(slider.dataset.value);
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') { event.preventDefault(); applyValue(current - step, 'slider'); }
+      if (event.key === 'ArrowRight' || event.key === 'ArrowUp') { event.preventDefault(); applyValue(current + step, 'slider'); }
+      if (event.key === 'Home') { event.preventDefault(); applyValue(Number(slider.dataset.min), 'slider'); }
+      if (event.key === 'End') { event.preventDefault(); applyValue(Number(slider.dataset.max), 'slider'); }
+    });
+  }
+
+  async #copyTuningSettings() {
+    const payload = {
+      type: 'ZUSMO_FF_TUNE',
+      version: 8,
+      map: this.selectedMap,
+      character: this.selectedCharacter,
+      graphics: 'HD_FIXED',
+      tuning: this.#clone(this.tuning)
+    };
+    const text = `ZUSMO FF TUNE V8\n${JSON.stringify(payload, null, 2)}`;
+    let copied = false;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        copied = true;
+      }
+    } catch (_) {}
+    if (!copied) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      textarea.style.pointerEvents = 'none';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try { copied = document.execCommand('copy'); } catch (_) {}
+      textarea.remove();
+    }
+    this.#setSaveState(copied ? 'TERSALIN • KIRIM KE CHAT' : 'COPY GAGAL', 1800);
   }
 
   #appendSpawnActions(group, mapId) {
@@ -551,8 +673,8 @@ export class UIManager {
       const base = `mapSpawns.${snapshot.mapId}`;
       const vals = { [`${base}.x`]: spawn.x, [`${base}.y`]: spawn.y, [`${base}.z`]: spawn.z, [`${base}.yaw`]: spawn.yaw };
       for (const [path, value] of Object.entries(vals)) {
-        const range = this.tuningOverlay.querySelector(`.setting-range[data-setting-path="${path}"]`);
-        if (range) range.value = String(value);
+        const slider = this.tuningOverlay.querySelector(`.setting-slider[data-setting-path="${path}"]`);
+        if (slider) this.#setSliderValue(slider, value);
         const number = this.tuningOverlay.querySelector(`.value-number[data-setting-path="${path}"]`);
         if (number && document.activeElement !== number) number.value = path.endsWith('.yaw') ? String(Math.round(value)) : Number(value).toFixed(2);
       }
@@ -594,7 +716,7 @@ export class UIManager {
 
   #loadTuning() {
     try {
-      const raw = localStorage.getItem('zusmoff_tuning_v7') || localStorage.getItem('zusmoff_tuning_v6') || localStorage.getItem('zusmoff_tuning_v5') || localStorage.getItem('zusmoff_tuning_v4') || 'null';
+      const raw = localStorage.getItem('zusmoff_tuning_v8') || localStorage.getItem('zusmoff_tuning_v7') || localStorage.getItem('zusmoff_tuning_v6') || localStorage.getItem('zusmoff_tuning_v5') || localStorage.getItem('zusmoff_tuning_v4') || 'null';
       const saved = JSON.parse(raw);
       return this.#deepMerge(this.#clone(DEFAULT_TUNING), saved || {});
     } catch (_) {
@@ -603,7 +725,7 @@ export class UIManager {
   }
 
   #saveTuning() {
-    localStorage.setItem('zusmoff_tuning_v7', JSON.stringify(this.tuning));
+    localStorage.setItem('zusmoff_tuning_v8', JSON.stringify(this.tuning));
   }
 
   #setSaveState(message, resetAfter = 0) {
