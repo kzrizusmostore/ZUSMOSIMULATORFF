@@ -1,0 +1,17 @@
+ZUSMO FF V18 - ASET BARU DIPERLUKAN
+
+Dua file berikut BELUM tersedia di sumber proyek/repo saat V18 dibuat.
+Jangan ganti nama file.
+
+1. KARAKTER ROUK
+   File: free_fire_rouk_ff_3d_model.glb
+   Letakkan di:
+   assets/characters/free_fire_rouk_ff_3d_model.glb
+
+2. PETA OLD RAMPAGE
+   File: free_fire_old_rampage_lobby_3d_model.glb
+   Letakkan di:
+   assets/maps/free_fire_old_rampage_lobby_3d_model.glb
+
+Setelah file asli diletakkan di jalur tersebut, menu V18 akan memuatnya secara lazy-load saat dipilih.
+Naruto dan Clock Tower tetap dapat dimainkan tanpa kedua file baru ini.

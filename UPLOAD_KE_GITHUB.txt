@@ -1,0 +1,23 @@
+ZUSMO FF V18 - FILE YANG BERUBAH
+
+Replace/upload file berikut ke root repo:
+- index.html
+- style.css
+- manifest.json
+- src/config/registry.js
+- src/UIManager.js
+- src/AnimationController.js
+- src/CharacterController.js
+- src/Game.js
+- src/main.js
+- src/AssetLoader.js
+
+Opsional dokumentasi:
+- README.md
+- ASET_BARU_DIPERLUKAN.txt
+
+ASET BARU YANG HARUS DITAMBAHKAN TERPISAH (belum tersedia dalam sumber yang diterima):
+- assets/characters/free_fire_rouk_ff_3d_model.glb
+- assets/maps/free_fire_old_rampage_lobby_3d_model.glb
+
+Naruto + Clock Tower tidak berubah dan tidak perlu diupload ulang.
