@@ -883,3 +883,24 @@ button,input,#joystick,#camera-zone{ -webkit-touch-callout:none; }
   .tuning-scroll{grid-column:1!important;grid-row:3!important;padding:11px 10px 16px!important}.slider-list{grid-template-columns:1fr!important}.tune-character-grid{grid-template-columns:1fr!important}
   .tuning-footer{grid-column:1!important;grid-row:4!important;grid-template-columns:92px 1fr 92px!important;gap:6px!important;padding:7px!important}.mini-action{font-size:7px!important}
 }
+
+/* ===== V19 tuning preview ===== */
+.tuning-main{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:12px;min-height:0;align-items:stretch}
+.tuning-preview-pane{display:flex;flex-direction:column;gap:10px;padding:12px 14px 14px;border-left:1px solid rgba(255,255,255,.08);background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01))}
+.tuning-preview-head{display:flex;flex-direction:column;gap:4px}
+.tuning-preview-head b{font-size:14px;letter-spacing:.04em}
+.tuning-preview-head small{font-size:11px;color:rgba(255,255,255,.65)}
+.tuning-preview-box{position:relative;flex:1;min-height:240px;border-radius:18px;border:1px solid rgba(255,255,255,.1);background:radial-gradient(circle at 50% 16%,rgba(255,255,255,.08),rgba(255,255,255,.02) 40%,rgba(0,0,0,.15) 100%);overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.02)}
+#tuning-preview-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.tuning-preview-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:16px;text-align:center;font-size:12px;line-height:1.5;color:rgba(255,255,255,.74);background:linear-gradient(180deg,rgba(8,10,15,.38),rgba(8,10,15,.14))}
+.tuning-preview-box.has-preview .tuning-preview-empty{display:none}
+@media (max-width: 980px){
+  .tuning-main{grid-template-columns:1fr}
+  .tuning-preview-pane{border-left:0;border-top:1px solid rgba(255,255,255,.08);padding-top:10px}
+  .tuning-preview-box{min-height:180px}
+}
+@media (max-width: 720px){
+  .tuning-preview-pane{order:-1}
+  .tuning-preview-head b{font-size:13px}
+  .tuning-preview-box{min-height:156px}
+}

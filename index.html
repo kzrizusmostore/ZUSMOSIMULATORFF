@@ -123,8 +123,23 @@
         <div class="tuning-quickbar">
           <div id="tuning-tabs" class="tuning-tabs" aria-label="Kategori pengaturan"></div>
         </div>
-        <div class="tuning-scroll">
-          <div id="tuning-controls" class="tuning-controls"></div>
+        <div class="tuning-main">
+          <div class="tuning-scroll">
+            <div id="tuning-controls" class="tuning-controls"></div>
+          </div>
+          <aside class="tuning-preview-pane" aria-label="Preview karakter">
+            <div class="tuning-preview-head">
+              <div>
+                <span class="eyebrow">PRATINJAU KARAKTER</span>
+                <b id="tuning-preview-name">Karakter aktif</b>
+              </div>
+              <small id="tuning-preview-note">Tampilan depan • latar kosong</small>
+            </div>
+            <div class="tuning-preview-box">
+              <canvas id="tuning-preview-canvas" aria-label="Kanvas preview karakter"></canvas>
+              <div id="tuning-preview-empty" class="tuning-preview-empty">Preview tampil saat game sedang aktif.</div>
+            </div>
+          </aside>
         </div>
         <div class="tuning-footer">
           <button id="btn-reset-tuning" class="mini-action danger-soft" type="button">ATUR ULANG</button>
