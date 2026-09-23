@@ -8,7 +8,7 @@ const DEFAULT_MOVEMENT = {
   acceleration: 14.0,
   deceleration: 18.0,
   turnSpeed: 14.0,
-  jumpPower: 4.20,
+  jumpPower: 4.05,
   gravity: 22.5
 };
 
@@ -38,6 +38,7 @@ export class CharacterController {
     this.gestureForward = new THREE.Vector3(0, 0, 1);
     this.gestureRight = new THREE.Vector3(1, 0, 0);
     this.moveGestureActive = false;
+    this.moveGesturePointer = null;
     this.desired = new THREE.Vector3();
     this.desiredVelocity = new THREE.Vector3();
     this.delta = new THREE.Vector3();
@@ -92,11 +93,15 @@ export class CharacterController {
     // feedback loop that made directions reverse in V12. If the user is
     // actively free-looking, use the live camera basis so movement follows it.
     const cameraManual = this.input.cameraPointer !== null;
-    if (mag > 0.065 && (!this.moveGestureActive || cameraManual)) {
+    const joystickPointer = this.input.joystickPointer;
+    const newJoystickGesture = joystickPointer !== null && joystickPointer !== this.moveGesturePointer;
+    if (mag > 0.065 && (!this.moveGestureActive || newJoystickGesture || cameraManual)) {
       this.cameraRig.getPlanarBasis(this.gestureForward, this.gestureRight);
       this.moveGestureActive = true;
-    } else if (mag < 0.035) {
+      this.moveGesturePointer = joystickPointer;
+    } else if (mag < 0.035 || joystickPointer === null) {
       this.moveGestureActive = false;
+      this.moveGesturePointer = null;
     }
     this.forward.copy(this.gestureForward);
     this.right.copy(this.gestureRight);
@@ -173,7 +178,7 @@ export class CharacterController {
     if (this.group.position.y < this.collision.bounds.min.y - 18) this.respawn();
 
     this.#selectAnimationState(mag);
-    this.animation.setState(this.state, this.speed);
+    this.animation.setState(this.state, this.speed, { verticalVelocity: this.verticalVelocity, grounded: this.grounded, stance: this.stance });
     this.animation.update(dt);
   }
 
@@ -196,5 +201,6 @@ export class CharacterController {
     this.grounded = true;
     this.landTimer = 0;
     this.moveGestureActive = false;
+    this.moveGesturePointer = null;
   }
 }

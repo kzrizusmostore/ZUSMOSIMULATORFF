@@ -7,27 +7,27 @@ const DEFAULT_TUNING = {
     acceleration: 14.0,
     deceleration: 18.0,
     turnSpeed: 14.0,
-    jumpPower: 4.20,
+    jumpPower: 4.05,
     gravity: 22.5
   },
   animation: {
-    intensity: 0.96,
-    walkStride: 0.80,
-    runStride: 0.86,
-    armSwing: 0.64,
-    kneeLift: 0.94,
-    bodyBob: 0.46,
-    hipSway: 0.46,
+    intensity: 1.0,
+    walkStride: 1.0,
+    runStride: 1.0,
+    armSwing: 1.0,
+    kneeLift: 1.0,
+    bodyBob: 0.74,
+    hipSway: 0.72,
     cadence: 1.00,
-    blend: 1.28,
-    lean: 0.70,
-    idleArmDown: 0.36,
-    idleElbowBend: 0.10,
-    idleArmTwist: 0.015,
-    idleShoulderRelax: 0.03,
+    blend: 1.30,
+    lean: 1.0,
+    idleArmDown: 0.35,
+    idleElbowBend: 0.12,
+    idleArmTwist: 0.0,
+    idleShoulderRelax: 0.04,
     idleHandRelax: 0.06,
-    idleBreathing: 0.46,
-    idleHeadMotion: 0.30
+    idleBreathing: 0.42,
+    idleHeadMotion: 0.24
   },
   character: {
     scale: 0.71,
@@ -708,13 +708,13 @@ export class UIManager {
   async #copyTuningSettings() {
     const payload = {
       type: 'ZUSMO_FF_TUNE',
-      version: 14,
+      version: 15,
       map: this.selectedMap,
       character: this.selectedCharacter,
       graphics: 'HD_FIXED',
       tuning: this.#clone(this.tuning)
     };
-    const text = `ZUSMO FF TUNE V14\n${JSON.stringify(payload, null, 2)}`;
+    const text = `ZUSMO FF TUNE V15\n${JSON.stringify(payload, null, 2)}`;
     let copied = false;
 
     try {
@@ -849,13 +849,13 @@ export class UIManager {
 
   #loadTuning() {
     try {
-      const currentRaw = localStorage.getItem('zusmoff_tuning_v14');
+      const currentRaw = localStorage.getItem('zusmoff_tuning_v15');
       if (currentRaw) return this.#deepMerge(this.#clone(DEFAULT_TUNING), JSON.parse(currentRaw) || {});
 
-      // V14 makes the reference-video animation the new baseline. Keep the
+      // V15 makes the reference-video animation the new baseline. Keep the
       // user's chosen character size + movement speeds and world calibration,
       // but do not import old animation amplitudes or old jump height.
-      const legacyRaw = localStorage.getItem('zusmoff_tuning_v13') || localStorage.getItem('zusmoff_tuning_v11') || localStorage.getItem('zusmoff_tuning_v10') || localStorage.getItem('zusmoff_tuning_v9') || localStorage.getItem('zusmoff_tuning_v8') || 'null';
+      const legacyRaw = localStorage.getItem('zusmoff_tuning_v14') || localStorage.getItem('zusmoff_tuning_v13') || localStorage.getItem('zusmoff_tuning_v11') || localStorage.getItem('zusmoff_tuning_v10') || localStorage.getItem('zusmoff_tuning_v9') || localStorage.getItem('zusmoff_tuning_v8') || 'null';
       const legacy = JSON.parse(legacyRaw) || {};
       const next = this.#clone(DEFAULT_TUNING);
       const mv = legacy.movement || {};
@@ -875,7 +875,7 @@ export class UIManager {
   }
 
   #saveTuning() {
-    localStorage.setItem('zusmoff_tuning_v14', JSON.stringify(this.tuning));
+    localStorage.setItem('zusmoff_tuning_v15', JSON.stringify(this.tuning));
   }
 
   #setSaveState(message, resetAfter = 0) {

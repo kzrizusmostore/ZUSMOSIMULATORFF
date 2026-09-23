@@ -150,8 +150,8 @@ export class MobileInput {
         queuePunch();
         this.punchRepeatTimer = setInterval(() => {
           if (this.punchHeld) queuePunch();
-        }, 330);
-      }, 260);
+        }, 410);
+      }, 230);
       e.preventDefault();
     });
     this.punchButton?.addEventListener('pointerup', stopPunch);
