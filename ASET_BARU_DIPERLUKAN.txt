@@ -1,17 +1,11 @@
-ZUSMO FF V18 - ASET BARU DIPERLUKAN
+ZUSMO FF V21
 
-Dua file berikut BELUM tersedia di sumber proyek/repo saat V18 dibuat.
-Jangan ganti nama file.
+Aset yang masih belum tersedia hanya:
+assets/maps/free_fire_old_rampage_lobby_3d_model.glb
 
-1. KARAKTER ROUK
-   File: free_fire_rouk_ff_3d_model.glb
-   Letakkan di:
-   assets/characters/free_fire_rouk_ff_3d_model.glb
+Aset baru V21 yang sudah diterima:
+assets/maps/dapur_mbg_kopdes.glb
+assets/characters/rias_sexy.glb
+assets/characters/the_amazing_spiderman.glb
 
-2. PETA OLD RAMPAGE
-   File: free_fire_old_rampage_lobby_3d_model.glb
-   Letakkan di:
-   assets/maps/free_fire_old_rampage_lobby_3d_model.glb
-
-Setelah file asli diletakkan di jalur tersebut, menu V18 akan memuatnya secara lazy-load saat dipilih.
-Naruto dan Clock Tower tetap dapat dimainkan tanpa kedua file baru ini.
+Rias Sexy dan The Amazing Spiderman adalah model statis tanpa skeleton/skin.

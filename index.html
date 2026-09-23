@@ -29,59 +29,66 @@
 
   <main id="ui-root" class="hidden">
     <section id="screen-menu" class="screen active">
-      <div class="menu-shell glass">
-        <div class="eyebrow">SIMULATOR GERAK 3D PONSEL</div>
-        <div class="brand brand-hero">ZUSMO <b>FF</b></div>
-        <div class="menu-meta" aria-label="Fitur permainan">
-          <span>RANGKA ASLI</span><span>PENGATURAN LANGSUNG</span><span>TITIK MUNCUL PER PETA</span>
+      <div class="menu-shell glass menu-shell-v20">
+        <div class="menu-primary">
+          <div class="eyebrow">SIMULATOR GERAK 3D • LANDSCAPE</div>
+          <div class="brand brand-hero">ZUSMO <b>FF</b></div>
+          <p class="menu-tagline">Pilih karakter dan peta, lalu langsung masuk ke permainan. Aset 3D baru dimuat setelah kamu menekan mulai.</p>
+          <button id="btn-play" class="btn primary menu-play-btn"><span>MAIN SEKARANG</span><small>Pilih karakter & peta</small></button>
+          <div class="menu-secondary-actions">
+            <button id="btn-settings" class="btn ghost">PENGATURAN</button>
+            <button class="btn ghost fullscreen-btn" data-fullscreen>LAYAR PENUH</button>
+          </div>
         </div>
-        <div class="menu-actions">
-          <button id="btn-play" class="btn primary">MAIN</button>
-          <button id="btn-settings" class="btn ghost">PENGATURAN</button>
-          <button class="btn ghost fullscreen-btn" data-fullscreen>LAYAR PENUH</button>
-        </div>
-        <div class="tiny">Naruto • Clock Tower (CT)</div>
+        <aside class="menu-flow" aria-label="Alur bermain">
+          <div class="menu-flow-title"><span>ALUR CEPAT</span><b>3 LANGKAH</b></div>
+          <div class="flow-step"><i>1</i><div><b>PILIH KARAKTER</b><small>Naruto, Rouk, Rias, atau Spider-Man</small></div></div>
+          <div class="flow-step"><i>2</i><div><b>PILIH PETA</b><small>Clock Tower / Dapur MBG-Kopdes</small></div></div>
+          <div class="flow-step"><i>3</i><div><b>MULAI PERMAINAN</b><small>Kontrol muncul setelah loading</small></div></div>
+          <div class="menu-flow-note">Tip: gunakan layar penuh untuk kontrol landscape yang paling nyaman.</div>
+        </aside>
       </div>
     </section>
 
-    <section id="screen-select" class="screen">
-      <div class="panel wide glass">
-        <div class="panel-head">
-          <button class="icon-btn" data-back="menu" aria-label="Kembali">‹</button>
-          <div><div class="eyebrow">RUANG PERSIAPAN</div><h1>PILIH KARAKTER & PETA</h1></div>
+    <section id="screen-select" class="screen screen-scrollable">
+      <div class="panel wide glass select-panel-v20">
+        <div class="panel-head select-head-v20">
+          <button class="icon-btn" data-back="menu" aria-label="Kembali ke menu">‹</button>
+          <div class="select-title"><div class="eyebrow">LANGKAH 1 & 2 DARI 3</div><h1>PILIH KARAKTER & PETA</h1><p>Sentuh satu kartu karakter dan satu kartu peta. Kartu merah berarti sedang dipilih.</p></div>
         </div>
         <div class="select-grid">
-          <div>
-            <h2>KARAKTER</h2>
+          <section class="select-column">
+            <div class="select-column-head"><span class="step-badge">1</span><div><h2>KARAKTER</h2><small>Pilih siapa yang kamu mainkan</small></div></div>
             <div id="character-list" class="card-list"></div>
-          </div>
-          <div>
-            <h2>PETA</h2>
+          </section>
+          <section class="select-column">
+            <div class="select-column-head"><span class="step-badge">2</span><div><h2>PETA</h2><small>Pilih lokasi permainan</small></div></div>
             <div id="map-list" class="card-list"></div>
-          </div>
+          </section>
         </div>
-        <div class="select-actions">
-          <button class="btn ghost" data-open-tuning>BUKA PENGATURAN</button>
-          <button id="btn-start" class="btn primary">MULAI PERMAINAN</button>
+        <div class="selection-dock">
+          <div class="selection-current">
+            <span><small>KARAKTER</small><b id="selected-character-name">-</b></span>
+            <i>+</i>
+            <span><small>PETA</small><b id="selected-map-name">-</b></span>
+          </div>
+          <div class="selection-actions">
+            <button class="btn ghost compact-btn" data-open-tuning>ATUR</button>
+            <button id="btn-start" class="btn primary start-game-btn"><span>MULAI PERMAINAN</span><small>LANGKAH 3</small></button>
+          </div>
         </div>
       </div>
     </section>
 
-    <section id="screen-settings" class="screen">
-      <div class="panel glass compact">
+    <section id="screen-settings" class="screen screen-scrollable">
+      <div class="panel glass settings-panel-v20">
         <div class="panel-head">
-          <button class="icon-btn" data-back="menu" aria-label="Kembali">‹</button>
-          <div><div class="eyebrow">ZUSMO FF</div><h1>PENGATURAN</h1></div>
+          <button class="icon-btn" data-back="menu" aria-label="Kembali ke menu">‹</button>
+          <div><div class="eyebrow">ZUSMO FF</div><h1>PENGATURAN</h1><p class="panel-subtitle">Semua pengaturan utama dibuat untuk landscape.</p></div>
         </div>
-        <div class="setting-block">
-          <span>PENGATURAN LANJUTAN</span>
-          <button class="btn primary full" data-open-tuning>BUKA PENGATURAN</button>
-          <p>Atur gerakan Jalan, Lari, Lompat, Jongkok, Tiarap, dan Pukul secara terpisah. Ganti karakter kapan saja, atur tampilan, ukuran, tanah, serta titik muncul. Semua nilai disimpan otomatis.</p>
-        </div>
-        <div class="setting-block">
-          <span>TAMPILAN</span>
-          <button class="btn ghost full fullscreen-btn" data-fullscreen>MASUK LAYAR PENUH</button>
-          <p>Layar penuh menyembunyikan bilah peramban jika Android mengizinkan. Saat permainan dimulai, layar penuh juga akan dicoba otomatis.</p>
+        <div class="settings-grid-v20">
+          <button class="settings-tile primary-tile" data-open-tuning><span>GERAK & KARAKTER</span><b>PENGATURAN LENGKAP</b><small>Jalan, lari, lompat, jongkok, tiarap, pukul, karakter, pencahayaan dan tampilan.</small><em>BUKA →</em></button>
+          <button class="settings-tile" data-fullscreen><span>TAMPILAN</span><b>LAYAR PENUH</b><small>Disarankan agar kontrol landscape punya ruang paling luas.</small><em>UBAH →</em></button>
         </div>
       </div>
     </section>
@@ -89,7 +96,7 @@
     <section id="loading" class="overlay hidden">
       <div class="loading-card glass">
         <div class="brand brand-lg">ZUSMO <b>FF</b></div>
-        <div id="loading-status">Menyiapkan dunia...</div>
+        <div id="loading-status">Menyiapkan dunia...</div><div class="loading-help">Jangan tutup halaman. Hanya aset karakter dan peta yang kamu pilih yang sedang dimuat.</div>
         <div class="progress-track"><div id="loading-bar"></div></div>
         <div class="progress-meta"><b id="loading-percent">0%</b><span id="loading-bytes">0 MB / 0 MB</span></div>
       </div>
@@ -153,6 +160,7 @@
       <div class="top-hud">
         <span id="hud-map">CT</span>
         <button class="hud-chip tune-chip" data-open-tuning aria-label="Buka pengaturan">ATUR</button>
+        <button id="btn-guide" class="hud-chip guide-chip" type="button" aria-label="Buka panduan kontrol">PANDUAN</button>
         <button class="hud-chip hud-fullscreen" data-fullscreen aria-label="Layar penuh">PENUH</button>
         <button id="btn-exit" class="hud-chip">MENU</button>
       </div>
@@ -166,6 +174,18 @@
         <button id="action-prone" class="action">TIARAP</button>
       </div>
       <pre id="debug" class="debug hidden"></pre>
+      <div id="control-guide" class="control-guide hidden" role="dialog" aria-label="Panduan kontrol">
+        <div class="control-guide-card">
+          <div class="guide-head"><div><span>SIAP BERMAIN</span><b>KONTROL LANDSCAPE</b></div><button id="btn-guide-close" type="button" aria-label="Tutup panduan">×</button></div>
+          <div class="guide-grid">
+            <div class="guide-item"><i class="guide-stick">●</i><div><b>GERAK</b><small>Geser analog kiri ke segala arah.</small></div></div>
+            <div class="guide-item"><i>↔</i><div><b>KAMERA</b><small>Geser area kosong di sisi kanan layar.</small></div></div>
+            <div class="guide-item"><i>RUN</i><div><b>AKSI</b><small>Lari, pukul, lompat, jongkok dan tiarap di kanan.</small></div></div>
+            <div class="guide-item"><i>⚙</i><div><b>ATUR</b><small>Tekan ATUR di atas untuk ubah karakter dan gerakan.</small></div></div>
+          </div>
+          <button id="btn-guide-ok" class="btn primary guide-ok" type="button">MENGERTI • MULAI</button>
+        </div>
+      </div>
     </section>
   </main>
 

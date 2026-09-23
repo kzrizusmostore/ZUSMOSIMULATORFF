@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#050608">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>ZUSMO FF</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="stylesheet" href="./style.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <canvas id="game-canvas" aria-label="Kanvas permainan ZUSMO FF"></canvas>
+
+  <div id="engine-boot" class="overlay boot-overlay">
+    <div class="brand brand-xl">ZUSMO <b>FF</b></div>
+    <div class="spinner"></div>
+    <div id="engine-boot-text" class="muted">Menyiapkan mesin 3D...</div>
+  </div>
+
+  <main id="ui-root" class="hidden">
+    <section id="screen-menu" class="screen active">
+      <div class="menu-shell glass">
+        <div class="eyebrow">SIMULATOR GERAK 3D PONSEL</div>
+        <div class="brand brand-hero">ZUSMO <b>FF</b></div>
+        <div class="menu-meta" aria-label="Fitur permainan">
+          <span>RANGKA ASLI</span><span>PENGATURAN LANGSUNG</span><span>TITIK MUNCUL PER PETA</span>
+        </div>
+        <div class="menu-actions">
+          <button id="btn-play" class="btn primary">MAIN</button>
+          <button id="btn-settings" class="btn ghost">PENGATURAN</button>
+          <button class="btn ghost fullscreen-btn" data-fullscreen>LAYAR PENUH</button>
+        </div>
+        <div class="tiny">Naruto • Clock Tower (CT)</div>
+      </div>
+    </section>
+
+    <section id="screen-select" class="screen">
+      <div class="panel wide glass">
+        <div class="panel-head">
+          <button class="icon-btn" data-back="menu" aria-label="Kembali">‹</button>
+          <div><div class="eyebrow">RUANG PERSIAPAN</div><h1>PILIH KARAKTER & PETA</h1></div>
+        </div>
+        <div class="select-grid">
+          <div>
+            <h2>KARAKTER</h2>
+            <div id="character-list" class="card-list"></div>
+          </div>
+          <div>
+            <h2>PETA</h2>
+            <div id="map-list" class="card-list"></div>
+          </div>
+        </div>
+        <div class="select-actions">
+          <button class="btn ghost" data-open-tuning>BUKA PENGATURAN</button>
+          <button id="btn-start" class="btn primary">MULAI PERMAINAN</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="screen-settings" class="screen">
+      <div class="panel glass compact">
+        <div class="panel-head">
+          <button class="icon-btn" data-back="menu" aria-label="Kembali">‹</button>
+          <div><div class="eyebrow">ZUSMO FF</div><h1>PENGATURAN</h1></div>
+        </div>
+        <div class="setting-block">
+          <span>PENGATURAN LANJUTAN</span>
+          <button class="btn primary full" data-open-tuning>BUKA PENGATURAN</button>
+          <p>Atur gerakan Jalan, Lari, Lompat, Jongkok, Tiarap, dan Pukul secara terpisah. Ganti karakter kapan saja, atur tampilan, ukuran, tanah, serta titik muncul. Semua nilai disimpan otomatis.</p>
+        </div>
+        <div class="setting-block">
+          <span>TAMPILAN</span>
+          <button class="btn ghost full fullscreen-btn" data-fullscreen>MASUK LAYAR PENUH</button>
+          <p>Layar penuh menyembunyikan bilah peramban jika Android mengizinkan. Saat permainan dimulai, layar penuh juga akan dicoba otomatis.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="loading" class="overlay hidden">
+      <div class="loading-card glass">
+        <div class="brand brand-lg">ZUSMO <b>FF</b></div>
+        <div id="loading-status">Menyiapkan dunia...</div>
+        <div class="progress-track"><div id="loading-bar"></div></div>
+        <div class="progress-meta"><b id="loading-percent">0%</b><span id="loading-bytes">0 MB / 0 MB</span></div>
+      </div>
+    </section>
+
+    <section id="load-error" class="overlay hidden">
+      <div class="error-card glass">
+        <div class="error-badge">!</div>
+        <h2>GAGAL MEMUAT</h2>
+        <p id="error-message">Aset gagal dimuat.</p>
+        <div class="error-actions">
+          <button id="btn-retry" class="btn primary">COBA LAGI</button>
+          <button id="btn-error-menu" class="btn ghost">MENU</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="tuning-overlay" class="overlay tuning-overlay hidden" aria-label="Pengaturan langsung permainan">
+      <div class="tuning-panel glass">
+        <div class="tuning-head">
+          <div class="tuning-title-wrap">
+            <div class="eyebrow">PENGATURAN LANGSUNG</div>
+            <h1>PENGATURAN LANGSUNG</h1>
+          </div>
+          <div class="tuning-head-actions">
+            <span id="tuning-save-state" class="tuning-save-state">LANGSUNG</span>
+            <button id="btn-move-tuning" class="mini-head-btn" type="button" aria-label="Pindahkan popup pengaturan">PINDAH</button>
+            <button class="icon-btn tune-close" data-close-tuning aria-label="Tutup pengaturan">×</button>
+          </div>
+        </div>
+        <div class="tuning-quickbar">
+          <div id="tuning-tabs" class="tuning-tabs" aria-label="Kategori pengaturan"></div>
+        </div>
+        <div class="tuning-scroll">
+          <div id="tuning-controls" class="tuning-controls"></div>
+        </div>
+        <div class="tuning-footer">
+          <button id="btn-reset-tuning" class="mini-action danger-soft" type="button">ATUR ULANG</button>
+          <button id="btn-copy-tuning" class="mini-action copy-action" type="button">SALIN PENGATURAN</button>
+          <button id="btn-save-tuning" class="mini-action primary" type="button">SIMPAN</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="hud" class="hidden">
+      <div class="top-hud">
+        <span id="hud-map">CT</span>
+        <button class="hud-chip tune-chip" data-open-tuning aria-label="Buka pengaturan">ATUR</button>
+        <button class="hud-chip hud-fullscreen" data-fullscreen aria-label="Layar penuh">PENUH</button>
+        <button id="btn-exit" class="hud-chip">MENU</button>
+      </div>
+      <div id="camera-zone" aria-label="Area geser kamera"></div>
+      <div id="joystick" class="joystick"><div id="joystick-knob"></div></div>
+      <div class="actions">
+        <button id="action-run" class="action run">LARI</button>
+        <button id="action-punch" class="action punch" aria-label="Pukul">PUKUL</button>
+        <button id="action-jump" class="action">LOMPAT</button>
+        <button id="action-crouch" class="action">JONGKOK</button>
+        <button id="action-prone" class="action">TIARAP</button>
+      </div>
+      <pre id="debug" class="debug hidden"></pre>
+    </section>
+  </main>
+
+  <script>
+    window.__ZUSMO_BOOTED = false;
+    setTimeout(() => {
+      if (!window.__ZUSMO_BOOTED) document.getElementById('engine-boot-text').textContent = 'Mesin 3D membutuhkan waktu lebih lama dari biasanya...';
+    }, 8000);
+    setTimeout(() => {
+      if (!window.__ZUSMO_BOOTED) {
+        document.getElementById('engine-boot-text').innerHTML = 'Mesin 3D gagal dimuat. Periksa internet/CDN, lalu <button onclick="location.reload()" class="inline-retry">MUAT ULANG</button>';
+      }
+    }, 18000);
+  </script>
+  <script type="module" src="./src/main.js"></script>
+<script>setTimeout(()=>{document.getElementById('btn-settings')?.click();setTimeout(()=>document.querySelector('[data-open-tuning]')?.click(),200)},500)</script></body>
+</html>

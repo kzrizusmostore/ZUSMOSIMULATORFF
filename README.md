@@ -1,80 +1,40 @@
-# ZUSMO FF V18
+# ZUSMO FF V21
 
-Pembaruan besar sistem pengaturan, karakter, peta, dan pemuatan aset untuk versi mobile.
+V21 melanjutkan UX landscape V20 dan menambahkan aset pilihan baru tanpa mengubah baseline gameplay/animasi Naruto.
 
-## Default baru
-V18 menggunakan nilai dasar dari **ZUSMO FF PENGATURAN V16** yang diberikan pengguna:
-
-- Jalan: 4.50 m/s
-- Lari: 7.50 m/s
-- Jongkok: 2.30 m/s
-- Tiarap: 0.90 m/s
-- Akselerasi: 14
-- Perlambatan: 18
-- Kecepatan berputar: 24
-- Kekuatan lompat: 4
-- Gravitasi: 16.5
-- Ukuran karakter: 0.71x
-- Clock Tower spawn: X 5.27 / Y 24.56 / Z -8.21 / yaw 36°
-- Grafik HD tetap menggunakan seluruh nilai pencahayaan/filter yang diberikan pengguna.
-
-RESET memakai baseline baru ini. V18 sengaja tidak mengimpor tuning lama agar instalasi yang pernah memakai V17/V16 juga mendapatkan default baru yang sama.
-
-## Pengaturan animasi per aksi
-Gerakan sekarang memiliki tab dan parameter terpisah:
-
-- JALAN
-- LARI
-- LOMPAT
-- JONGKOK
-- TIARAP
-- PUKUL
-- DIAM
-- UMUM
-
-Nilai aksi tambahan dimulai di 1.00x agar preset dasar pengguna tetap menjadi baseline, lalu dapat disetel tanpa mengubah aksi lain.
-
-## Tiarap
-Pose tiarap V18 tidak lagi sekadar merebahkan seluruh karakter. Transisi melewati jongkok dalam, tubuh menghadap tanah, dada diberi jarak dari tanah, siku menopang badan, kepala diangkat, dan crawl memakai gerak tangan/kaki kecil yang terpisah.
-
-## Karakter dan peta
-Registry sekarang memuat:
-
-### Karakter
-- Naruto — `assets/characters/naruto_free_fire.glb`
-- Rouk — `assets/characters/free_fire_rouk_ff_3d_model.glb`
-
-### Peta
+## Peta
 - Clock Tower — `assets/maps/free_fire_clocktower_3d_model_by_ffxn.glb`
-- Old Rampage — `assets/maps/free_fire_old_rampage_lobby_3d_model.glb`
+- Dapur MBG-KOPDES — `assets/maps/dapur_mbg_kopdes.glb`
+- Old Rampage — terdaftar, tetapi masih BELUM TERPASANG karena file `free_fire_old_rampage_lobby_3d_model.glb` belum tersedia.
 
-Rouk dan Old Rampage terdaftar sebagai aset eksternal karena file GLB tersebut belum tersedia pada sumber proyek yang diterima saat V18 dibuat. Letakkan file asli dengan nama persis di jalur di atas.
+## Karakter
+- Naruto — rigged, animasi tulang prosedural aktif.
+- Rouk — model statis, tanpa skeleton/skin.
+- Rias Sexy — model statis, tanpa skeleton/skin.
+- The Amazing Spiderman — model statis, tanpa skeleton/skin.
+
+Model statis tetap dapat dipilih dan digerakkan sebagai karakter, tetapi pose/animasi tulang seperti Naruto tidak dapat diterapkan karena file sumber memang tidak memiliki skeleton.
 
 ## Pemuatan hemat data
-Ketika pengguna baru membuka menu, aplikasi hanya memuat HTML/CSS serta modul UI ringan. Three.js, renderer, modul gameplay, dan seluruh GLB karakter/peta belum diminta. Mesin 3D baru di-import setelah pengguna memilih karakter + peta dan menekan **MULAI GAME**.
+Aset karakter dan peta tetap baru dimuat setelah pemain memilih karakter+peta dan menekan MULAI PERMAINAN. Mengganti karakter saat game aktif hanya memuat karakter tersebut dan tidak memuat ulang peta.
 
-Saat game aktif, karakter dapat diganti dari **PENGATURAN LANGSUNG → PILIH KARAKTER**. Pergantian karakter hanya memuat GLB karakter baru dan mempertahankan peta yang sedang aktif.
+## Paket FULL mulai V21
+**FULL PROJECT sengaja TANPA folder `assets/`.**
 
-## UI pengaturan V18
-Panel pengaturan dirancang ulang agar tidak sesak:
+Tujuannya agar source project ringan dan update kode tidak memaksa pengguna mengunduh ulang GLB besar. Salin aset secara terpisah ke jalur berikut:
 
-- layout lebar dua kolom di landscape;
-- daftar kategori berada di sisi kiri;
-- kontrol aktif berada di area besar sebelah kanan;
-- dua kolom slider pada layar landscape;
-- satu kolom pada portrait;
-- tombol +/- dan input angka diperbesar;
-- kategori dapat digeser horizontal pada portrait;
-- seluruh teks pengaturan menggunakan Bahasa Indonesia.
+```
+assets/characters/naruto_free_fire.glb
+assets/characters/free_fire_rouk_ff_3d_model.glb
+assets/characters/rias_sexy.glb
+assets/characters/the_amazing_spiderman.glb
+assets/maps/free_fire_clocktower_3d_model_by_ffxn.glb
+assets/maps/dapur_mbg_kopdes.glb
+assets/maps/free_fire_old_rampage_lobby_3d_model.glb  # belum tersedia
+```
 
-## Kamera dan analog
-Perilaku kamera/analog V17 dipertahankan:
+## Default tuning
+Baseline tetap menggunakan preset pengguna dari ZUSMO FF PENGATURAN V16 yang dipakai sejak V18: Jalan 4.5, Lari 7.5, Jongkok 2.3, Tiarap 0.9, Turn 24, Jump 4, Gravity 16.5, Scale 0.71, dan profil HD tetap.
 
-- kamera bebas digeser dan tidak hard-lock / auto-kembali;
-- kamera zoom-in dengan jarak sekitar 3.15;
-- analog 360° bebas;
-- arah gerak mengikuti basis kamera secara langsung;
-- tombol LARI tetap terpisah.
-
-## Menjalankan proyek
+## Menjalankan
 Gunakan HTTP/HTTPS. Jangan membuka `index.html` melalui `file://`.

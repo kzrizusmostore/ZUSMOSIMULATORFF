@@ -904,3 +904,135 @@ button,input,#joystick,#camera-zone{ -webkit-touch-callout:none; }
   .tuning-preview-head b{font-size:13px}
   .tuning-preview-box{min-height:156px}
 }
+
+/* ==========================================================
+   V20 — UX LANDSCAPE FIRST
+   Fokus: alur jelas, target sentuh besar, scroll native, tuning lapang.
+   ========================================================== */
+.menu-shell::after{content:"V20"!important}
+
+/* Touch rules: scroll containers MUST allow native pan-y. */
+.screen-scrollable,
+.screen-scrollable .panel,
+.select-column,
+.card-list,
+.tuning-overlay,
+.tuning-panel,
+.tuning-quickbar,
+.tuning-tabs,
+.tuning-main,
+.tuning-scroll,
+.tuning-controls{touch-action:pan-y!important;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important}
+button,.btn,.icon-btn,.select-card,.settings-tile,.hud-chip,.tuning-tab,.value-step,.value-number{touch-action:manipulation!important}
+#joystick,#joystick *,#camera-zone,.actions,.action{touch-action:none!important}
+
+/* Strong visual feedback for every tappable element. */
+button,.select-card,.settings-tile{cursor:pointer}
+button:active,.select-card:active,.settings-tile:active{transform:scale(.985)}
+button:disabled{opacity:.42!important;cursor:not-allowed!important;filter:saturate(.45)}
+
+@media (orientation:landscape){
+  .screen{padding:max(8px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))!important;overflow:hidden!important}
+  .screen-scrollable{overflow-y:auto!important;align-items:flex-start!important;place-items:start center!important}
+
+  /* ---------- HOME ---------- */
+  .menu-shell-v20{
+    width:min(920px,94vw)!important;min-height:min(430px,88dvh)!important;max-height:92dvh!important;
+    padding:0!important;display:grid!important;grid-template-columns:minmax(0,1.2fr) minmax(290px,.8fr)!important;
+    overflow:hidden!important;border-radius:24px!important;
+  }
+  .menu-primary{padding:clamp(24px,5vh,48px) clamp(28px,4vw,54px)!important;display:flex;flex-direction:column;justify-content:center;min-width:0}
+  .menu-primary .brand-hero{font-size:clamp(58px,8.2vw,92px)!important;margin:10px 0 14px!important}
+  .menu-tagline{margin:0 0 22px;max-width:560px;color:#aeb5c2;font-size:clamp(11px,1.15vw,14px);line-height:1.55;pointer-events:none}
+  .menu-play-btn{min-height:70px!important;border-radius:16px!important;display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:flex-start!important;padding:12px 20px!important;text-align:left!important;box-shadow:0 15px 38px rgba(225,29,46,.22)!important}
+  .menu-play-btn span{font-size:18px;font-weight:950;letter-spacing:.04em}.menu-play-btn small{font-size:9px;margin-top:4px;color:rgba(255,255,255,.74);letter-spacing:.08em}
+  .menu-secondary-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px}.menu-secondary-actions .btn{min-height:43px!important;padding:9px 12px!important;font-size:9px!important}
+  .menu-flow{padding:30px 28px;display:flex;flex-direction:column;justify-content:center;gap:10px;background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.012));border-left:1px solid rgba(255,255,255,.08)}
+  .menu-flow-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}.menu-flow-title span{font-size:9px;color:#929aa7;letter-spacing:.16em;font-weight:900}.menu-flow-title b{font-size:9px;color:#ff7a89}
+  .flow-step{display:grid;grid-template-columns:38px minmax(0,1fr);gap:11px;align-items:center;padding:11px;border-radius:13px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.065)}
+  .flow-step i{display:grid;place-items:center;width:38px;height:38px;border-radius:11px;background:rgba(225,29,46,.15);border:1px solid rgba(255,77,96,.28);font-style:normal;font-weight:950;color:#ff7180}
+  .flow-step b{display:block;font-size:10px;letter-spacing:.06em}.flow-step small{display:block;margin-top:3px;font-size:8px;color:#929aa7;line-height:1.35}
+  .menu-flow-note{margin-top:4px;padding:9px 10px;border-radius:10px;background:rgba(255,255,255,.025);font-size:8px;line-height:1.45;color:#8f97a5}
+
+  /* ---------- CHARACTER / MAP SELECTION ---------- */
+  .select-panel-v20{
+    width:min(1120px,97vw)!important;height:min(650px,94dvh)!important;max-height:94dvh!important;
+    padding:0!important;overflow:hidden!important;display:grid!important;grid-template-rows:auto minmax(0,1fr) auto!important;border-radius:22px!important;
+  }
+  .select-head-v20{margin:0!important;padding:14px 18px!important;border-bottom:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.018)}
+  .select-head-v20 .icon-btn{width:44px!important;height:44px!important;flex:0 0 44px!important}
+  .select-title h1{font-size:20px!important;margin:2px 0 3px!important}.select-title p{margin:0;color:#9098a5;font-size:9px;line-height:1.4;pointer-events:none}
+  .select-grid{min-height:0!important;padding:12px 16px!important;gap:12px!important;overflow:hidden!important}
+  .select-column{min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr);padding:10px;border-radius:15px;background:rgba(255,255,255,.018);border:1px solid rgba(255,255,255,.06);overflow:hidden}
+  .select-column-head{display:flex;align-items:center;gap:10px;padding:0 2px 9px;border-bottom:1px solid rgba(255,255,255,.055);pointer-events:none}
+  .select-column-head h2{margin:0!important;font-size:11px!important;color:#fff!important}.select-column-head small{display:block;margin-top:2px;font-size:7px;color:#8c94a1}
+  .step-badge{display:grid;place-items:center;width:31px;height:31px;border-radius:9px;background:rgba(225,29,46,.16);border:1px solid rgba(255,78,97,.3);font-size:11px;font-weight:950;color:#ff7180}
+  .card-list{min-height:0!important;overflow-y:auto!important;padding:9px 3px 6px 0!important;gap:8px!important;scrollbar-width:thin}
+  .card-list::-webkit-scrollbar{width:5px}.card-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16);border-radius:99px}
+  .select-card{min-height:82px!important;padding:12px 14px!important;border-radius:13px!important;text-align:left!important;touch-action:manipulation!important}
+  .select-card b{font-size:15px!important;margin-top:16px!important}.select-card small{font-size:8px!important;display:block;margin-top:2px}.select-card .status{font-size:7px!important;top:10px!important;left:12px!important}.select-card .code{font-size:34px!important}
+  .select-card.selected{border-color:rgba(255,74,94,.9)!important;background:linear-gradient(135deg,rgba(225,29,46,.20),rgba(255,255,255,.025))!important;box-shadow:inset 4px 0 0 #ef3347,0 8px 22px rgba(0,0,0,.22)!important}
+  .select-card.selected::before{font-size:7px!important;right:10px!important;bottom:8px!important}
+  .selection-dock{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 14px;border-top:1px solid rgba(255,255,255,.08);background:rgba(4,5,8,.92);backdrop-filter:blur(12px)}
+  .selection-current{display:flex;align-items:center;gap:12px;min-width:0}.selection-current>span{min-width:110px;padding:7px 10px;border-radius:10px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06)}.selection-current small{display:block;font-size:6px;color:#8f97a5;letter-spacing:.12em}.selection-current b{display:block;margin-top:2px;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.selection-current>i{font-style:normal;color:#69707b;font-weight:900}
+  .selection-actions{display:flex;gap:8px;align-items:stretch}.compact-btn{min-width:80px!important;padding:9px 14px!important}.start-game-btn{min-width:210px!important;min-height:46px!important;display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:center!important;padding:7px 18px!important}.start-game-btn span{font-size:11px;font-weight:950}.start-game-btn small{margin-top:2px;font-size:6px;color:rgba(255,255,255,.72);letter-spacing:.14em}
+
+  /* ---------- SETTINGS HUB ---------- */
+  .settings-panel-v20{width:min(880px,94vw)!important;max-height:88dvh!important;padding:20px!important;overflow-y:auto!important;touch-action:pan-y!important}.settings-panel-v20 .panel-head{margin-bottom:15px}.panel-subtitle{margin:3px 0 0;color:#939ba8;font-size:9px;pointer-events:none}
+  .settings-grid-v20{display:grid;grid-template-columns:1.25fr .75fr;gap:12px}.settings-tile{position:relative;min-height:180px;padding:20px;border-radius:17px;text-align:left;color:#fff;background:linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.018));border:1px solid rgba(255,255,255,.09)}.settings-tile.primary-tile{background:linear-gradient(145deg,rgba(225,29,46,.16),rgba(255,255,255,.02));border-color:rgba(255,79,98,.3)}.settings-tile span{display:block;font-size:7px;color:#ff7d8b;letter-spacing:.16em;font-weight:950}.settings-tile b{display:block;margin-top:12px;font-size:18px}.settings-tile small{display:block;margin-top:8px;max-width:420px;font-size:9px;line-height:1.5;color:#9aa2af}.settings-tile em{position:absolute;left:20px;bottom:18px;font-style:normal;font-size:8px;font-weight:950;color:#fff}
+
+  /* ---------- LOADING / ERROR ---------- */
+  .loading-card{width:min(500px,72vw)!important;padding:24px 28px!important}.loading-help{margin-top:9px;color:#858e9c;font-size:9px;line-height:1.45;text-align:center;pointer-events:none}
+  .error-card{width:min(560px,80vw)!important;max-height:86dvh!important;overflow-y:auto!important;touch-action:pan-y!important}
+
+  /* ---------- IN-GAME HUD ---------- */
+  .top-hud{pointer-events:none!important}.top-hud .hud-chip{pointer-events:auto!important;min-height:38px!important;display:flex;align-items:center;justify-content:center;padding:8px 11px!important}.top-hud #hud-map{min-height:38px;display:flex;align-items:center}
+  .guide-chip{border-color:rgba(255,255,255,.16)!important;background:rgba(5,6,8,.62)!important}
+  .joystick{width:142px!important;height:142px!important;left:max(22px,env(safe-area-inset-left))!important;bottom:max(18px,env(safe-area-inset-bottom))!important;border-width:2px!important}
+  .joystick>div{width:60px!important;height:60px!important;margin:-30px!important}
+  #camera-zone{left:33%!important;right:0!important;top:13%!important;bottom:0!important}
+  .actions{right:max(18px,env(safe-area-inset-right))!important;bottom:max(14px,env(safe-area-inset-bottom))!important;transform:none!important}
+  .action{box-shadow:0 8px 24px rgba(0,0,0,.28)!important}
+
+  /* First-entry control guide. */
+  .control-guide{position:absolute;inset:0;z-index:80;display:grid;place-items:center;padding:18px;pointer-events:auto!important;background:rgba(3,4,7,.62);backdrop-filter:blur(5px);touch-action:none!important}
+  .control-guide-card{width:min(700px,88vw);padding:18px;border-radius:20px;background:linear-gradient(150deg,rgba(20,23,31,.98),rgba(7,9,13,.98));border:1px solid rgba(255,255,255,.12);box-shadow:0 24px 80px rgba(0,0,0,.6)}
+  .guide-head{display:flex;align-items:center;justify-content:space-between;padding-bottom:11px;border-bottom:1px solid rgba(255,255,255,.07)}.guide-head span{display:block;font-size:7px;letter-spacing:.16em;color:#ff7180;font-weight:950}.guide-head b{display:block;margin-top:3px;font-size:16px}.guide-head button{width:35px;height:35px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);font-size:20px}
+  .guide-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}.guide-item{display:grid;grid-template-columns:46px 1fr;gap:10px;align-items:center;padding:10px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.065)}.guide-item>i{display:grid;place-items:center;width:46px;height:46px;border-radius:50%;font-style:normal;font-size:10px;font-weight:950;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.1)}.guide-stick{font-size:17px!important}.guide-item b{display:block;font-size:9px;letter-spacing:.08em}.guide-item small{display:block;margin-top:3px;font-size:8px;line-height:1.4;color:#929aa7}.guide-ok{width:100%;min-height:44px!important;font-size:10px!important}
+
+  /* ---------- TUNING: FULL LANDSCAPE WORKSPACE ---------- */
+  .tuning-overlay{display:grid!important;place-items:center!important;padding:6px!important;background:rgba(2,3,5,.68)!important;pointer-events:auto!important;touch-action:none!important}
+  .tuning-panel{
+    position:relative!important;inset:auto!important;left:auto!important;top:auto!important;right:auto!important;bottom:auto!important;
+    width:min(1180px,calc(100dvw - 12px))!important;height:min(680px,calc(100dvh - 12px))!important;max-width:calc(100dvw - 12px)!important;max-height:calc(100dvh - 12px)!important;
+    display:grid!important;grid-template-columns:156px minmax(0,1fr)!important;grid-template-rows:54px minmax(0,1fr) 48px!important;border-radius:17px!important;overflow:hidden!important;
+  }
+  .tuning-head{grid-column:1/-1!important;grid-row:1!important;min-height:54px!important;padding:9px 12px 9px 16px!important}
+  #btn-move-tuning{display:none!important}.tuning-head-actions{pointer-events:auto!important}.tune-close{width:36px!important;height:36px!important}
+  .tuning-quickbar{grid-column:1!important;grid-row:2!important;min-height:0!important;padding:8px!important;overflow-y:auto!important;overflow-x:hidden!important;border-right:1px solid rgba(255,255,255,.075)!important;background:rgba(0,0,0,.18)!important}
+  .tuning-tabs{display:flex!important;flex-direction:column!important;gap:5px!important;width:100%!important;overflow:visible!important}
+  .tuning-tab{width:100%!important;min-height:39px!important;padding:8px 9px!important;text-align:left!important;font-size:8px!important;border-radius:9px!important;flex:none!important}
+  .tuning-main{grid-column:2!important;grid-row:2!important;min-width:0!important;min-height:0!important;display:grid!important;grid-template-columns:minmax(330px,1fr) clamp(220px,28vw,320px)!important;gap:0!important;overflow:hidden!important;touch-action:none!important}
+  .tuning-scroll{min-width:0!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;padding:14px!important;touch-action:pan-y!important}
+  .tuning-preview-pane{min-width:0!important;min-height:0!important;padding:12px!important;border-left:1px solid rgba(255,255,255,.075)!important;border-top:0!important;overflow:hidden!important;background:rgba(255,255,255,.014)!important}
+  .tuning-preview-box{min-height:0!important;height:100%!important;flex:1!important;border-radius:14px!important}.tuning-preview-head{flex:0 0 auto}.tuning-preview-head b{font-size:12px!important}.tuning-preview-head small{font-size:8px!important}
+  .tuning-footer{grid-column:1/-1!important;grid-row:3!important;min-height:48px!important;padding:7px 9px!important;grid-template-columns:110px minmax(120px,1fr) 110px!important}
+  .slider-list{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}.slider-row.compact-setting{min-height:78px!important;padding:9px!important}.slider-label{font-size:8.5px!important}.setting-line{align-items:flex-start!important}.manual-value{flex:0 0 auto!important}.value-step{min-width:30px!important;min-height:30px!important}.value-number{min-width:60px!important;min-height:30px!important;font-size:10px!important}
+  .tune-character-card{min-height:70px!important}.tune-character-note{font-size:8px!important}
+}
+
+/* Compact landscape phones: keep all critical controls reachable without tiny text. */
+@media (orientation:landscape) and (max-height:430px){
+  .menu-shell-v20{min-height:calc(100dvh - 14px)!important}.menu-primary{padding:18px 28px!important}.menu-primary .brand-hero{font-size:58px!important;margin:6px 0 9px!important}.menu-tagline{font-size:9px!important;margin-bottom:12px!important}.menu-play-btn{min-height:56px!important}.menu-flow{padding:18px!important;gap:6px!important}.flow-step{padding:8px!important}.flow-step i{width:32px;height:32px}.menu-flow-note{display:none}
+  .select-panel-v20{height:calc(100dvh - 10px)!important}.select-head-v20{padding:8px 12px!important}.select-title h1{font-size:16px!important}.select-title p{display:none}.select-grid{padding:7px 10px!important}.select-column{padding:7px!important}.select-card{min-height:68px!important;padding:9px 11px!important}.select-card b{font-size:13px!important;margin-top:13px!important}.selection-dock{padding:6px 10px!important}.selection-current>span{padding:5px 8px!important}.start-game-btn{min-height:40px!important}
+  .control-guide-card{padding:12px!important}.guide-grid{margin:8px 0;gap:6px}.guide-item{padding:7px!important}.guide-item>i{width:38px;height:38px}.guide-head{padding-bottom:7px}.guide-ok{min-height:38px!important}
+  .tuning-panel{height:calc(100dvh - 8px)!important;grid-template-columns:132px minmax(0,1fr)!important;grid-template-rows:45px minmax(0,1fr) 42px!important}.tuning-head{min-height:45px!important;padding:6px 8px 6px 11px!important}.tuning-head h1{font-size:11px!important}.tuning-tab{min-height:32px!important;font-size:7px!important;padding:6px!important}.tuning-main{grid-template-columns:minmax(300px,1fr) minmax(190px,30vw)!important}.tuning-scroll{padding:8px!important}.tuning-preview-pane{padding:8px!important}.tuning-preview-head small{display:none}.slider-row.compact-setting{min-height:66px!important;padding:7px!important}.slider-list{gap:6px!important}.tuning-footer{min-height:42px!important;padding:5px 7px!important}.mini-action{height:30px!important}
+}
+
+/* V20 gesture chain corrections: every ancestor of a scroll surface must allow pan-y. */
+@media (orientation:landscape){
+  #screen-select,.select-panel-v20,.select-grid,.select-column,.card-list,
+  #screen-settings,.settings-panel-v20,.settings-grid-v20,
+  .tuning-overlay,.tuning-panel,.tuning-main,.tuning-scroll,.tuning-controls,
+  .tuning-quickbar,.tuning-tabs{touch-action:pan-y!important}
+}
