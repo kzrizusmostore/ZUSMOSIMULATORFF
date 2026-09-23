@@ -1,10 +1,9 @@
 import * as THREE from 'three';
 
-// V16: kembali ke rasa kamera versi awal ZUSMO FF.
-// Tidak ada hard-lock yaw ke arah karakter. Kamera mempertahankan sudut yang
-// dipilih pemain dan mengikuti posisi karakter secara halus seperti versi awal.
-// Perbedaannya hanya jarak dibuat lebih dekat (zoom-in) agar karakter terasa
-// lebih besar di layar HP.
+// V17: perilaku kamera dikembalikan ke versi awal ZUSMO FF.
+// Kamera sepenuhnya bebas digeser dan tidak pernah dipaksa mengunci atau
+// otomatis kembali ke arah karakter. Jarak tetap dibuat lebih dekat agar
+// karakter lebih besar di layar, sesuai permintaan zoom-in sebelumnya.
 export class ThirdPersonCamera {
   constructor(camera, collisionSystem) {
     this.camera = camera;
@@ -27,15 +26,12 @@ export class ThirdPersonCamera {
     this.pitch = -0.08;
     this.smoothedTarget.copy(characterPosition).add(new THREE.Vector3(0, this.lookHeight, 0));
     this.initialized = true;
-    this.update(0.016, characterPosition, { x: 0, y: 0 }, null, true);
+    this.update(0.016, characterPosition, { x: 0, y: 0 }, true);
   }
 
-  update(dt, characterPosition, cameraDelta, _context = null, snap = false) {
-    const dragX = Number(cameraDelta?.x) || 0;
-    const dragY = Number(cameraDelta?.y) || 0;
-
-    this.yaw -= dragX * this.sensitivity;
-    this.pitch -= dragY * this.sensitivity;
+  update(dt, characterPosition, cameraDelta, snap = false) {
+    this.yaw -= (Number(cameraDelta?.x) || 0) * this.sensitivity;
+    this.pitch -= (Number(cameraDelta?.y) || 0) * this.sensitivity;
     this.pitch = THREE.MathUtils.clamp(this.pitch, -0.60, 0.48);
 
     this.target.copy(characterPosition);

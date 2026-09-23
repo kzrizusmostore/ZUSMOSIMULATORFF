@@ -327,7 +327,7 @@ export class UIManager {
         await this.#enterFullscreen();
       }
     } catch (error) {
-      console.warn('[ZUSMO FF] Fullscreen request was blocked by the browser', error);
+      console.warn('[ZUSMO FF] Permintaan layar penuh diblokir oleh peramban', error);
     }
     this.#syncFullscreenButtons();
   }
@@ -389,7 +389,7 @@ export class UIManager {
         ]
       },
       {
-        id: 'animation', label: 'ANIMASI', title: 'ANIMASI', subtitle: 'Atur gerakan skeleton Naruto secara langsung.',
+        id: 'animation', label: 'ANIMASI', title: 'ANIMASI', subtitle: 'Atur gerakan rangka Naruto secara langsung.',
         controls: [
           ['Intensitas Gerak', 'animation.intensity', 0.55, 1.70, 0.01, '×'],
           ['Langkah Jalan', 'animation.walkStride', 0.55, 1.65, 0.01, '×'],
@@ -419,19 +419,19 @@ export class UIManager {
         id: 'character', label: 'UKURAN/TANAH', title: 'UKURAN KARAKTER & TANAH', subtitle: 'Sesuaikan ukuran Naruto dan posisi telapak kaki terhadap permukaan map.',
         controls: [
           ['Ukuran Karakter', 'character.scale', 0.70, 1.35, 0.01, '×'],
-          ['Offset Telapak Kaki', 'character.footOffset', -0.25, 0.25, 0.005, ' m'],
-          ['Offset Fisika Tanah', 'grounding.groundOffset', -0.08, 0.16, 0.002, ' m'],
+          ['Koreksi Posisi Telapak', 'character.footOffset', -0.25, 0.25, 0.005, ' m'],
+          ['Koreksi Posisi Tanah', 'grounding.groundOffset', -0.08, 0.16, 0.002, ' m'],
           ['Jarak Menempel Tanah', 'grounding.snapDistance', 0.10, 1.40, 0.02, ' m'],
           ['Jarak Menempel Saat Mendarat', 'grounding.landingDistance', 0.05, 0.55, 0.01, ' m'],
           ['Kedalaman Deteksi Tanah', 'grounding.probeDistance', 3.0, 14.0, 0.25, ' m']
         ]
       },
       {
-        id: 'spawn', label: 'SPAWN', title: `SPAWN MAP • ${mapDef?.shortName || 'MAP'}`, subtitle: `Spawn disimpan khusus untuk ${mapDef?.name || 'map ini'}. X/Y/Z memilih lokasi; Y dipakai untuk memilih lantai/permukaan map yang paling dekat.`,
+        id: 'spawn', label: 'TITIK MUNCUL', title: `TITIK MUNCUL PETA • ${mapDef?.shortName || 'PETA'}`, subtitle: `Titik muncul disimpan khusus untuk ${mapDef?.name || 'peta ini'}. X/Y/Z memilih lokasi; Y dipakai untuk memilih lantai/permukaan peta yang paling dekat.`,
         controls: [
-          ['Spawn X', `${spawnPath}.x`, range.xMin, range.xMax, 0.25, ' m'],
-          ['Spawn Y / Lantai', `${spawnPath}.y`, range.yMin, range.yMax, 0.25, ' m'],
-          ['Spawn Z', `${spawnPath}.z`, range.zMin, range.zMax, 0.25, ' m'],
+          ['Posisi X', `${spawnPath}.x`, range.xMin, range.xMax, 0.25, ' m'],
+          ['Posisi Y / Lantai', `${spawnPath}.y`, range.yMin, range.yMax, 0.25, ' m'],
+          ['Posisi Z', `${spawnPath}.z`, range.zMin, range.zMax, 0.25, ' m'],
           ['Arah Hadap', `${spawnPath}.yaw`, -180, 180, 1, '°']
         ],
         mapId: mapDef?.id,
@@ -448,11 +448,11 @@ export class UIManager {
         ]
       },
       {
-        id: 'map', label: 'MAP', title: 'FILTER MAP', subtitle: `Atur filter ${mapDef?.name || 'map'} secara langsung.`,
+        id: 'map', label: 'PETA', title: 'TAMPILAN PETA', subtitle: `Atur filter ${mapDef?.name || 'peta'} secara langsung.`,
         controls: FILTER_CONTROLS.map((c) => [c[0], `${profile}.map.${c[1]}`, ...c.slice(2)])
       },
       {
-        id: 'charfilter', label: 'KARAKTER', title: 'FILTER KARAKTER', subtitle: `Atur filter ${charDef?.name || 'karakter'} secara langsung.`,
+        id: 'charfilter', label: 'KARAKTER', title: 'TAMPILAN KARAKTER', subtitle: `Atur filter ${charDef?.name || 'karakter'} secara langsung.`,
         controls: FILTER_CONTROLS.map((c) => [c[0], `${profile}.character.${c[1]}`, ...c.slice(2)])
       }
     ];
@@ -708,13 +708,13 @@ export class UIManager {
   async #copyTuningSettings() {
     const payload = {
       type: 'ZUSMO_FF_TUNE',
-      version: 16,
+      version: 17,
       map: this.selectedMap,
       character: this.selectedCharacter,
       graphics: 'HD_TETAP',
       tuning: this.#clone(this.tuning)
     };
-    const text = `ZUSMO FF PENGATURAN V16\n${JSON.stringify(payload, null, 2)}`;
+    const text = `ZUSMO FF PENGATURAN V17\n${JSON.stringify(payload, null, 2)}`;
     let copied = false;
 
     try {
@@ -723,7 +723,7 @@ export class UIManager {
         copied = true;
       }
     } catch (error) {
-      console.warn('[ZUSMO FF] Clipboard API gagal, memakai cadangan.', error);
+      console.warn('[ZUSMO FF] API papan klip gagal, memakai cadangan.', error);
     }
 
     if (!copied) {
@@ -750,7 +750,7 @@ export class UIManager {
       this.#setSaveState('PILIH + SALIN MANUAL', 2200);
       return;
     }
-    this.#setSaveState('TERSALIN • KIRIM KE CHAT', 1800);
+    this.#setSaveState('TERSALIN • KIRIM KE PERCAKAPAN', 1800);
   }
 
   #showCopyFallback(text) {
@@ -762,7 +762,7 @@ export class UIManager {
       box.innerHTML = `
         <div class="copy-fallback-card">
           <div class="copy-fallback-head"><b>SALIN PENGATURAN</b><button type="button" aria-label="Tutup">×</button></div>
-          <small>Clipboard browser diblokir. Teks sudah dipilih; tekan lama lalu pilih Salin.</small>
+          <small>Papan klip peramban diblokir. Teks sudah dipilih; tekan lama lalu pilih Salin.</small>
           <textarea spellcheck="false"></textarea>
         </div>`;
       document.body.appendChild(box);
@@ -783,10 +783,10 @@ export class UIManager {
     actions.className = 'spawn-tools auto-spawn-tools';
     actions.innerHTML = `
       <div class="spawn-tools-head">
-        <b>SPAWN OTOMATIS MENGIKUTI</b>
-        <span id="spawn-live-note">Posisi spawn mengikuti karakter secara otomatis saat bergerak.</span>
+        <b>TITIK MUNCUL OTOMATIS MENGIKUTI</b>
+        <span id="spawn-live-note">Posisi titik muncul mengikuti karakter secara otomatis saat bergerak.</span>
       </div>
-      <div class="spawn-live-pill"><i></i><span>LANGSUNG • MAP ${mapId || '-'}</span></div>`;
+      <div class="spawn-live-pill"><i></i><span>LANGSUNG • PETA ${mapId || '-'}</span></div>`;
     group.appendChild(actions);
   }
 
@@ -852,9 +852,9 @@ export class UIManager {
       const currentRaw = localStorage.getItem('zusmoff_tuning_v15');
       if (currentRaw) return this.#deepMerge(this.#clone(DEFAULT_TUNING), JSON.parse(currentRaw) || {});
 
-      // V15 makes the reference-video animation the new baseline. Keep the
-      // user's chosen character size + movement speeds and world calibration,
-      // but do not import old animation amplitudes or old jump height.
+      // Nilai V15 tetap dipertahankan; hanya perilaku kamera/analog yang kembali ke versi awal.
+      // Untuk versi lebih lama, pertahankan ukuran, kecepatan, kalibrasi dunia,
+      // titik muncul, dan grafis tanpa membawa amplitudo animasi lama.
       const legacyRaw = localStorage.getItem('zusmoff_tuning_v14') || localStorage.getItem('zusmoff_tuning_v13') || localStorage.getItem('zusmoff_tuning_v11') || localStorage.getItem('zusmoff_tuning_v10') || localStorage.getItem('zusmoff_tuning_v9') || localStorage.getItem('zusmoff_tuning_v8') || 'null';
       const legacy = JSON.parse(legacyRaw) || {};
       const next = this.#clone(DEFAULT_TUNING);
@@ -898,7 +898,7 @@ export class UIManager {
     for (const c of this.characters) {
       const el = document.createElement('button');
       el.className = 'select-card';
-      el.innerHTML = `<span class="status">${c.available ? 'TERSEDIA' : 'TERKUNCI'}</span><span class="code">N</span><b>${c.name}</b><small>Rig / skeleton asli</small>`;
+      el.innerHTML = `<span class="status">${c.available ? 'TERSEDIA' : 'TERKUNCI'}</span><span class="code">N</span><b>${c.name}</b><small>Rangka / tulang asli</small>`;
       el.disabled = !c.available;
       el.addEventListener('click', () => { this.selectedCharacter = c.id; localStorage.setItem('zusmoff_character', c.id); this.#renderCards(); });
       el.classList.toggle('selected', this.selectedCharacter === c.id);
@@ -910,7 +910,7 @@ export class UIManager {
     for (const m of this.maps) {
       const el = document.createElement('button');
       el.className = 'select-card';
-      el.innerHTML = `<span class="status">${m.available ? 'TERSEDIA' : 'TERKUNCI'}</span><span class="code">${m.shortName}</span><b>${m.name}</b><small>${m.shortName} • Map GLB asli</small>`;
+      el.innerHTML = `<span class="status">${m.available ? 'TERSEDIA' : 'TERKUNCI'}</span><span class="code">${m.shortName}</span><b>${m.name}</b><small>${m.shortName} • Peta GLB asli</small>`;
       el.disabled = !m.available;
       el.addEventListener('click', () => {
         this.selectedMap = m.id;

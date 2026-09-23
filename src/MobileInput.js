@@ -3,8 +3,6 @@ export class MobileInput {
     this.moveX = 0;
     this.moveY = 0;
     this.run = false;
-    this.runButtonHeld = false;
-    this.dragSprint = false;
     this.crouch = false;
     this.prone = false;
     this.jumpQueued = false;
@@ -36,7 +34,7 @@ export class MobileInput {
 
   reset() {
     this.moveX = this.moveY = 0;
-    this.run = this.runButtonHeld = this.dragSprint = false;
+    this.run = false;
     this.crouch = this.prone = false;
     this.jumpQueued = false;
     this.punchQueued = 0;
@@ -51,9 +49,9 @@ export class MobileInput {
   }
 
   consumeJump() {
-    const v = this.jumpQueued;
+    const value = this.jumpQueued;
     this.jumpQueued = false;
-    return v;
+    return value;
   }
 
   consumePunch() {
@@ -68,69 +66,72 @@ export class MobileInput {
     return out;
   }
 
-  #syncRun() {
-    this.run = !!(this.runButtonHeld || this.dragSprint);
-    this.runButton.classList.toggle('active', this.run);
-  }
-
   #bind() {
-    const endJoystick = (e) => {
-      if (e.pointerId !== this.joystickPointer) return;
+    // Analog versi awal: 360 derajat penuh, tanpa drag-to-sprint dan tanpa
+    // penguncian arah. Posisi stik langsung menjadi moveX/moveY.
+    const endJoystick = (event) => {
+      if (event.pointerId !== this.joystickPointer) return;
       this.joystickPointer = null;
       this.moveX = this.moveY = 0;
-      this.dragSprint = false;
-      this.#syncRun();
       this.knob.style.transform = 'translate(0px, 0px)';
     };
-    this.joystick.addEventListener('pointerdown', (e) => {
+
+    this.joystick.addEventListener('pointerdown', (event) => {
       if (!this.enabled || this.joystickPointer !== null) return;
-      this.joystickPointer = e.pointerId;
-      this.joystick.setPointerCapture?.(e.pointerId);
-      this.#updateJoystick(e);
-      e.preventDefault();
+      this.joystickPointer = event.pointerId;
+      this.joystick.setPointerCapture?.(event.pointerId);
+      this.#updateJoystick(event);
+      event.preventDefault();
     });
-    this.joystick.addEventListener('pointermove', (e) => {
-      if (e.pointerId === this.joystickPointer) this.#updateJoystick(e);
+    this.joystick.addEventListener('pointermove', (event) => {
+      if (event.pointerId === this.joystickPointer) this.#updateJoystick(event);
     });
     this.joystick.addEventListener('pointerup', endJoystick);
     this.joystick.addEventListener('pointercancel', endJoystick);
+    this.joystick.addEventListener('lostpointercapture', endJoystick);
 
-    let lastX = 0, lastY = 0;
-    const endCamera = (e) => { if (e.pointerId === this.cameraPointer) this.cameraPointer = null; };
-    this.cameraZone.addEventListener('pointerdown', (e) => {
+    let lastX = 0;
+    let lastY = 0;
+    const endCamera = (event) => {
+      if (event.pointerId === this.cameraPointer) this.cameraPointer = null;
+    };
+    this.cameraZone.addEventListener('pointerdown', (event) => {
       if (!this.enabled || this.cameraPointer !== null) return;
-      this.cameraPointer = e.pointerId;
-      lastX = e.clientX; lastY = e.clientY;
-      this.cameraZone.setPointerCapture?.(e.pointerId);
-      e.preventDefault();
+      this.cameraPointer = event.pointerId;
+      lastX = event.clientX;
+      lastY = event.clientY;
+      this.cameraZone.setPointerCapture?.(event.pointerId);
+      event.preventDefault();
     });
-    this.cameraZone.addEventListener('pointermove', (e) => {
-      if (e.pointerId !== this.cameraPointer) return;
-      this.cameraDX += e.clientX - lastX;
-      this.cameraDY += e.clientY - lastY;
-      lastX = e.clientX; lastY = e.clientY;
+    this.cameraZone.addEventListener('pointermove', (event) => {
+      if (event.pointerId !== this.cameraPointer) return;
+      this.cameraDX += event.clientX - lastX;
+      this.cameraDY += event.clientY - lastY;
+      lastX = event.clientX;
+      lastY = event.clientY;
     });
     this.cameraZone.addEventListener('pointerup', endCamera);
     this.cameraZone.addEventListener('pointercancel', endCamera);
+    this.cameraZone.addEventListener('lostpointercapture', endCamera);
 
-    const setRunButton = (v) => {
+    const setRun = (value) => {
       if (!this.enabled) return;
-      this.runButtonHeld = v;
-      this.#syncRun();
+      this.run = value;
+      this.runButton.classList.toggle('active', value);
     };
-    this.runButton.addEventListener('pointerdown', (e) => {
-      setRunButton(true);
-      this.runButton.setPointerCapture?.(e.pointerId);
-      e.preventDefault();
+    this.runButton.addEventListener('pointerdown', (event) => {
+      setRun(true);
+      this.runButton.setPointerCapture?.(event.pointerId);
+      event.preventDefault();
     });
-    this.runButton.addEventListener('pointerup', () => setRunButton(false));
-    this.runButton.addEventListener('pointercancel', () => setRunButton(false));
-    this.runButton.addEventListener('lostpointercapture', () => setRunButton(false));
+    this.runButton.addEventListener('pointerup', () => setRun(false));
+    this.runButton.addEventListener('pointercancel', () => setRun(false));
+    this.runButton.addEventListener('lostpointercapture', () => setRun(false));
 
-    this.jumpButton.addEventListener('pointerdown', (e) => {
+    this.jumpButton.addEventListener('pointerdown', (event) => {
       if (!this.enabled) return;
       this.jumpQueued = true;
-      e.preventDefault();
+      event.preventDefault();
     });
 
     const queuePunch = () => { this.punchQueued = Math.min(2, this.punchQueued + 1); };
@@ -139,12 +140,12 @@ export class MobileInput {
       this.#stopPunchRepeat();
       this.punchButton?.classList.remove('active');
     };
-    this.punchButton?.addEventListener('pointerdown', (e) => {
+    this.punchButton?.addEventListener('pointerdown', (event) => {
       if (!this.enabled) return;
       this.punchHeld = true;
       queuePunch();
       this.punchButton.classList.add('active');
-      this.punchButton.setPointerCapture?.(e.pointerId);
+      this.punchButton.setPointerCapture?.(event.pointerId);
       this.punchHoldTimer = setTimeout(() => {
         if (!this.punchHeld) return;
         queuePunch();
@@ -152,27 +153,28 @@ export class MobileInput {
           if (this.punchHeld) queuePunch();
         }, 410);
       }, 230);
-      e.preventDefault();
+      event.preventDefault();
     });
     this.punchButton?.addEventListener('pointerup', stopPunch);
     this.punchButton?.addEventListener('pointercancel', stopPunch);
     this.punchButton?.addEventListener('lostpointercapture', stopPunch);
 
-    this.crouchButton.addEventListener('pointerdown', (e) => {
+    this.crouchButton.addEventListener('pointerdown', (event) => {
       if (!this.enabled) return;
       this.crouch = !this.crouch;
       if (this.crouch) this.prone = false;
       this.crouchButton.classList.toggle('active', this.crouch);
       this.proneButton.classList.toggle('active', this.prone);
-      e.preventDefault();
+      event.preventDefault();
     });
-    this.proneButton.addEventListener('pointerdown', (e) => {
+
+    this.proneButton.addEventListener('pointerdown', (event) => {
       if (!this.enabled) return;
       this.prone = !this.prone;
       if (this.prone) this.crouch = false;
       this.proneButton.classList.toggle('active', this.prone);
       this.crouchButton.classList.toggle('active', this.crouch);
-      e.preventDefault();
+      event.preventDefault();
     });
   }
 
@@ -183,24 +185,20 @@ export class MobileInput {
     this.punchRepeatTimer = null;
   }
 
-  #updateJoystick(e) {
-    const r = this.joystick.getBoundingClientRect();
-    const cx = r.left + r.width / 2;
-    const cy = r.top + r.height / 2;
-    const radius = r.width * 0.34;
-    const rawDx = e.clientX - cx;
-    const rawDy = e.clientY - cy;
-    let dx = rawDx;
-    let dy = rawDy;
-    const len = Math.hypot(dx, dy);
-    if (len > radius) { dx = dx / len * radius; dy = dy / len * radius; }
+  #updateJoystick(event) {
+    const rect = this.joystick.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const radius = rect.width * 0.34;
+    let dx = event.clientX - centerX;
+    let dy = event.clientY - centerY;
+    const length = Math.hypot(dx, dy);
+    if (length > radius) {
+      dx = dx / length * radius;
+      dy = dy / length * radius;
+    }
     this.moveX = dx / radius;
     this.moveY = -dy / radius;
-
-    // Drag slightly above the normal joystick radius to sprint, matching the
-    // familiar mobile Free Fire control pattern. RUN button still works too.
-    this.dragSprint = rawDy < -radius * 1.12 && Math.abs(rawDx) < radius * 1.05;
-    this.#syncRun();
     this.knob.style.transform = `translate(${dx}px, ${dy}px)`;
   }
 }

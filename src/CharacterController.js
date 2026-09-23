@@ -31,14 +31,6 @@ export class CharacterController {
     this.velocity = new THREE.Vector3();
     this.forward = new THREE.Vector3();
     this.right = new THREE.Vector3();
-    // Freeze the camera-relative basis for one joystick gesture. With a camera
-    // that is hard-locked behind the character, recomputing RIGHT every frame
-    // creates a feedback loop: holding RIGHT rotates the character, rotates the
-    // camera, then rotates RIGHT again. The result feels inverted/spinning.
-    this.gestureForward = new THREE.Vector3(0, 0, 1);
-    this.gestureRight = new THREE.Vector3(1, 0, 0);
-    this.moveGestureActive = false;
-    this.moveGesturePointer = null;
     this.desired = new THREE.Vector3();
     this.desiredVelocity = new THREE.Vector3();
     this.delta = new THREE.Vector3();
@@ -82,29 +74,10 @@ export class CharacterController {
 
     const mag = Math.min(1, Math.hypot(this.input.moveX, this.input.moveY));
 
-    // Screen-correct directional mapping:
-    //   joystick UP    -> screen/camera forward
-    //   joystick DOWN  -> screen/camera backward
-    //   joystick RIGHT -> screen/camera right
-    //   joystick LEFT  -> screen/camera left
-    //
-    // While auto-camera is locked behind the character we capture this basis
-    // once at the start of the joystick gesture. That breaks the camera/turn
-    // feedback loop that made directions reverse in V12. If the user is
-    // actively free-looking, use the live camera basis so movement follows it.
-    const cameraManual = this.input.cameraPointer !== null;
-    const joystickPointer = this.input.joystickPointer;
-    const newJoystickGesture = joystickPointer !== null && joystickPointer !== this.moveGesturePointer;
-    if (mag > 0.065 && (!this.moveGestureActive || newJoystickGesture || cameraManual)) {
-      this.cameraRig.getPlanarBasis(this.gestureForward, this.gestureRight);
-      this.moveGestureActive = true;
-      this.moveGesturePointer = joystickPointer;
-    } else if (mag < 0.035 || joystickPointer === null) {
-      this.moveGestureActive = false;
-      this.moveGesturePointer = null;
-    }
-    this.forward.copy(this.gestureForward);
-    this.right.copy(this.gestureRight);
+    // Kontrol versi awal: analog selalu memakai basis kamera saat ini.
+    // Tidak ada penguncian arah per gesture, tidak ada auto-heading, dan tidak
+    // ada koreksi 180 derajat. Analog bebas 360 derajat seperti versi awal.
+    this.cameraRig.getPlanarBasis(this.forward, this.right);
 
     this.desired.set(0, 0, 0)
       .addScaledVector(this.forward, this.input.moveY)
@@ -200,7 +173,5 @@ export class CharacterController {
     this.verticalVelocity = 0;
     this.grounded = true;
     this.landTimer = 0;
-    this.moveGestureActive = false;
-    this.moveGesturePointer = null;
   }
 }

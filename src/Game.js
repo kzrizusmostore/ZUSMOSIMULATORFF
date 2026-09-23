@@ -85,7 +85,7 @@ export class Game {
     const mapDef = this.maps.find((x) => x.id === selection.mapId && x.available);
     const charDef = this.characters.find((x) => x.id === selection.characterId && x.available);
     if (!mapDef || !charDef) {
-      this.ui.showError('Map atau karakter yang dipilih tidak tersedia.');
+      this.ui.showError('Peta atau karakter yang dipilih tidak tersedia.');
       return;
     }
 
@@ -110,11 +110,11 @@ export class Game {
     try {
       const mapGltf = await this.assetLoader.loadGLB(mapDef, (p) => {
         mapLoaded = Math.min(mapDef.bytes || p.total || p.loaded, p.loaded);
-        updateTransfer(`Loading ${mapDef.name}...`);
+        updateTransfer(`Memuat ${mapDef.name}...`);
       });
       if (generation !== this.loadGeneration) return;
       mapLoaded = mapDef.bytes;
-      updateTransfer(`Parsing ${mapDef.name}...`);
+      updateTransfer(`Memproses ${mapDef.name}...`);
       await this.#nextFrame();
 
       const mapRoot = this.mapManager.install(mapDef, mapGltf);
@@ -128,22 +128,22 @@ export class Game {
 
       const charGltf = await this.assetLoader.loadGLB(charDef, (p) => {
         charLoaded = Math.min(charDef.bytes || p.total || p.loaded, p.loaded);
-        updateTransfer(`Loading ${charDef.name}...`);
+        updateTransfer(`Memuat ${charDef.name}...`);
       });
       if (generation !== this.loadGeneration) return;
       charLoaded = charDef.bytes;
-      this.ui.updateLoading(94, 'Menyiapkan skeleton...', total, total);
+      this.ui.updateLoading(94, 'Menyiapkan rangka karakter...', total, total);
       await this.#nextFrame();
 
       const characterInfo = this.characterManager.install(charDef, charGltf);
       this.graphics.trackObject(this.characterManager.group, 'character');
-      console.info('[ZUSMO FF] Naruto loaded');
-      console.info(`[ZUSMO FF] Skeleton detected: ${characterInfo.skeletonCount > 0}`);
-      console.info(`[ZUSMO FF] Bone count: ${characterInfo.boneCount}`);
-      console.info(`[ZUSMO FF] Animation clips: ${characterInfo.animations.map((a) => a.name || '(unnamed)').join(', ') || 'none - procedural bone animation active'}`);
+      console.info('[ZUSMO FF] Naruto dimuat');
+      console.info(`[ZUSMO FF] Rangka terdeteksi: ${characterInfo.skeletonCount > 0}`);
+      console.info(`[ZUSMO FF] Jumlah tulang: ${characterInfo.boneCount}`);
+      console.info(`[ZUSMO FF] Klip animasi: ${characterInfo.animations.map((a) => a.name || '(tanpa nama)').join(', ') || 'tidak ada - animasi tulang prosedural aktif'}`);
 
       if (characterInfo.skeletonCount < 1 || characterInfo.boneCount < 1) {
-        throw new Error('Naruto berhasil dimuat, tetapi skeleton/bone asli tidak terdeteksi.');
+        throw new Error('Naruto berhasil dimuat, tetapi rangka/tulang asli tidak terdeteksi.');
       }
 
       this.ui.updateLoading(98, 'Menyiapkan tekstur...', total, total);
@@ -164,7 +164,7 @@ export class Game {
         this.tuning,
         spawnYaw
       );
-      this.cameraRig.reset(spawn, spawnYaw, { stance: 'standing', grounded: true, speed: 0, scale: this.controller?.characterScale || 0.71 });
+      this.cameraRig.reset(spawn);
       this.#applyTuning();
       this.ui.updateLoading(100, 'Memasuki dunia...', total, total);
       await this.#nextFrame();
@@ -175,11 +175,11 @@ export class Game {
       this.clock.getDelta();
       this.ui.showHUD(mapDef, this.currentGraphics, this.debugEnabled);
     } catch (error) {
-      console.error('[ZUSMO FF] Load error', error);
+      console.error('[ZUSMO FF] Kesalahan pemuatan', error);
       if (generation !== this.loadGeneration) return;
       this.gameActive = false;
       this.input.setEnabled(false);
-      this.ui.showError(`${error?.message || error}\n\nAsset paths are relative to index.html. Deploy through HTTP/HTTPS (GitHub Pages, Netlify, local server), not file://.`);
+      this.ui.showError(`${error?.message || error}\n\nJalur aset mengikuti index.html. Jalankan melalui HTTP/HTTPS (GitHub Pages, Netlify, atau server lokal), bukan file://.`);
     }
   }
 
@@ -210,7 +210,7 @@ export class Game {
     const point = this.#resolveSpawnPoint(this.currentMap, config);
     const yaw = THREE.MathUtils.degToRad(config.yaw || 0);
     this.controller.setSpawn(point, yaw, true);
-    this.cameraRig.reset(point, yaw, { stance: this.controller?.stance || 'standing', grounded: true, speed: 0, scale: this.controller?.characterScale || 0.71 });
+    this.cameraRig.reset(point);
     return true;
   }
 
@@ -263,17 +263,7 @@ export class Game {
     if (this.gameActive && this.controller && this.characterManager.group) {
       this.controller.update(dt);
       const cameraDelta = this.input.consumeCameraDelta();
-      this.cameraRig.update(dt, this.characterManager.group.position, cameraDelta, {
-        yaw: this.characterManager.group.rotation.y,
-        stance: this.controller.stance,
-        grounded: this.controller.grounded,
-        speed: this.controller.speed,
-        scale: this.controller.characterScale,
-        cameraActive: this.input.cameraPointer !== null,
-        moving: Math.hypot(this.input.moveX, this.input.moveY) > 0.06,
-        moveX: this.input.moveX,
-        moveY: this.input.moveY
-      });
+      this.cameraRig.update(dt, this.characterManager.group.position, cameraDelta);
       this.#updateSun();
       this.ui.syncLiveSpawn?.(this.captureSpawn());
       this.#updateDebug(dt);
@@ -306,21 +296,21 @@ export class Game {
     const profile = this.tuning?.graphics?.profiles?.[this.currentGraphics];
     this.ui.updateDebug(
 `FPS: ${this.fps}
-Map: ${this.currentMap?.name} (${this.currentMap?.shortName})
-Character: ${this.currentCharacter?.name}
-Quality: ${this.currentGraphics.toUpperCase()}
-Map Sharp: ${Math.round((profile?.map?.sharpness || 0) * 100)}%
-Char Sharp: ${Math.round((profile?.character?.sharpness || 0) * 100)}%
+Peta: ${this.currentMap?.name} (${this.currentMap?.shortName})
+Karakter: ${this.currentCharacter?.name}
+Kualitas: ${this.currentGraphics.toUpperCase()}
+Ketajaman Peta: ${Math.round((profile?.map?.sharpness || 0) * 100)}%
+Ketajaman Karakter: ${Math.round((profile?.character?.sharpness || 0) * 100)}%
 State: ${c.state}
 Speed: ${c.speed.toFixed(2)} m/s
-Walk / Run: ${c.settings.walkSpeed.toFixed(1)} / ${c.settings.runSpeed.toFixed(1)} m/s
-Char Scale: ${(this.tuning?.character?.scale ?? 1).toFixed(2)}x
-Foot Offset: ${(this.tuning?.character?.footOffset ?? 0).toFixed(3)} m
-Ground Offset: ${(c.grounding?.groundOffset ?? 0).toFixed(3)} m
-Spawn: ${this.#getSpawnConfig(this.currentMap).x.toFixed(1)}, ${this.#getSpawnConfig(this.currentMap).y.toFixed(1)}, ${this.#getSpawnConfig(this.currentMap).z.toFixed(1)} @ ${this.#getSpawnConfig(this.currentMap).yaw.toFixed(0)}°
+Jalan / Lari: ${c.settings.walkSpeed.toFixed(1)} / ${c.settings.runSpeed.toFixed(1)} m/s
+Ukuran Karakter: ${(this.tuning?.character?.scale ?? 1).toFixed(2)}x
+Koreksi Telapak: ${(this.tuning?.character?.footOffset ?? 0).toFixed(3)} m
+Koreksi Tanah: ${(c.grounding?.groundOffset ?? 0).toFixed(3)} m
+Titik Muncul: ${this.#getSpawnConfig(this.currentMap).x.toFixed(1)}, ${this.#getSpawnConfig(this.currentMap).y.toFixed(1)}, ${this.#getSpawnConfig(this.currentMap).z.toFixed(1)} @ ${this.#getSpawnConfig(this.currentMap).yaw.toFixed(0)}°
 Grounded: ${c.grounded}
-Bones: ${this.characterManager.bones.size}
-Clips: ${this.characterManager.animations.length}`
+Tulang: ${this.characterManager.bones.size}
+Klip: ${this.characterManager.animations.length}`
     );
   }
 
@@ -343,7 +333,7 @@ Clips: ${this.characterManager.animations.length}`
       e.preventDefault();
       this.gameActive = false;
       this.input.setEnabled(false);
-      this.ui.showError('Konteks WebGL terputus. Tekan Coba Lagi setelah browser pulih, atau muat ulang halaman.');
+      this.ui.showError('Konteks WebGL terputus. Tekan Coba Lagi setelah peramban pulih, atau muat ulang halaman.');
     });
     this.graphics.resize(innerWidth, innerHeight);
   }
