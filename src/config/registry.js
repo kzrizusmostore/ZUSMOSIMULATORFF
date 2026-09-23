@@ -15,7 +15,7 @@ export const MAPS = [
     id: 'dapur-mbg-kopdes',
     name: 'Dapur MBG-KOPDES',
     shortName: 'MBG',
-    asset: './assets/maps/dapur_mbg_kopdes.glb',
+    asset: './assets/maps/dapur_mbg-kopdes (1).glb',
     bytes: 6623792,
     available: true,
     bundled: true,
