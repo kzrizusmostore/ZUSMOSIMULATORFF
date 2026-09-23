@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
@@ -19,26 +19,26 @@
   </script>
 </head>
 <body>
-  <canvas id="game-canvas" aria-label="ZUSMO FF game canvas"></canvas>
+  <canvas id="game-canvas" aria-label="Kanvas game ZUSMO FF"></canvas>
 
   <div id="engine-boot" class="overlay boot-overlay">
     <div class="brand brand-xl">ZUSMO <b>FF</b></div>
     <div class="spinner"></div>
-    <div id="engine-boot-text" class="muted">Preparing 3D engine...</div>
+    <div id="engine-boot-text" class="muted">Menyiapkan mesin 3D...</div>
   </div>
 
   <main id="ui-root" class="hidden">
     <section id="screen-menu" class="screen active">
       <div class="menu-shell glass">
-        <div class="eyebrow">3D MOBILE MOVEMENT SIMULATOR</div>
+        <div class="eyebrow">SIMULATOR GERAK 3D MOBILE</div>
         <div class="brand brand-hero">ZUSMO <b>FF</b></div>
-        <div class="menu-meta" aria-label="Game features">
-          <span>ORIGINAL RIG</span><span>LIVE TUNING</span><span>PER-MAP SPAWN</span>
+        <div class="menu-meta" aria-label="Fitur game">
+          <span>RIG ASLI</span><span>PENGATURAN LANGSUNG</span><span>SPAWN PER MAP</span>
         </div>
         <div class="menu-actions">
-          <button id="btn-play" class="btn primary">PLAY</button>
-          <button id="btn-settings" class="btn ghost">SETTINGS</button>
-          <button class="btn ghost fullscreen-btn" data-fullscreen>FULLSCREEN</button>
+          <button id="btn-play" class="btn primary">MAIN</button>
+          <button id="btn-settings" class="btn ghost">PENGATURAN</button>
+          <button class="btn ghost fullscreen-btn" data-fullscreen>LAYAR PENUH</button>
         </div>
         <div class="tiny">Naruto • Clock Tower (CT)</div>
       </div>
@@ -47,12 +47,12 @@
     <section id="screen-select" class="screen">
       <div class="panel wide glass">
         <div class="panel-head">
-          <button class="icon-btn" data-back="menu" aria-label="Back">‹</button>
-          <div><div class="eyebrow">READY ROOM</div><h1>SELECT LOADOUT</h1></div>
+          <button class="icon-btn" data-back="menu" aria-label="Kembali">‹</button>
+          <div><div class="eyebrow">RUANG PERSIAPAN</div><h1>PILIH KARAKTER & MAP</h1></div>
         </div>
         <div class="select-grid">
           <div>
-            <h2>CHARACTER</h2>
+            <h2>KARAKTER</h2>
             <div id="character-list" class="card-list"></div>
           </div>
           <div>
@@ -61,8 +61,8 @@
           </div>
         </div>
         <div class="select-actions">
-          <button class="btn ghost" data-open-tuning>QUICK TUNE</button>
-          <button id="btn-start" class="btn primary">START GAME</button>
+          <button class="btn ghost" data-open-tuning>ATUR CEPAT</button>
+          <button id="btn-start" class="btn primary">MULAI GAME</button>
         </div>
       </div>
     </section>
@@ -70,18 +70,18 @@
     <section id="screen-settings" class="screen">
       <div class="panel glass compact">
         <div class="panel-head">
-          <button class="icon-btn" data-back="menu" aria-label="Back">‹</button>
-          <div><div class="eyebrow">ZUSMO FF</div><h1>SETTINGS</h1></div>
+          <button class="icon-btn" data-back="menu" aria-label="Kembali">‹</button>
+          <div><div class="eyebrow">ZUSMO FF</div><h1>PENGATURAN</h1></div>
         </div>
         <div class="setting-block">
-          <span>ADVANCED TUNING</span>
-          <button class="btn primary full" data-open-tuning>QUICK TUNE</button>
-          <p>Atur filter, lighting, speed, idle arm pose, ukuran/grounding, dan spawn khusus setiap map. Nilai disimpan otomatis.</p>
+          <span>PENGATURAN LANJUTAN</span>
+          <button class="btn primary full" data-open-tuning>ATUR CEPAT</button>
+          <p>Atur filter, pencahayaan, kecepatan, pose diam, ukuran/posisi tanah, dan spawn khusus setiap map. Nilai disimpan otomatis.</p>
         </div>
         <div class="setting-block">
-          <span>DISPLAY</span>
-          <button class="btn ghost full fullscreen-btn" data-fullscreen>ENTER FULLSCREEN</button>
-          <p>Fullscreen hides browser chrome when Android allows it. Starting the game also requests fullscreen automatically.</p>
+          <span>TAMPILAN</span>
+          <button class="btn ghost full fullscreen-btn" data-fullscreen>MASUK LAYAR PENUH</button>
+          <p>Layar penuh menyembunyikan bilah browser jika Android mengizinkan. Saat game dimulai, layar penuh juga akan dicoba otomatis.</p>
         </div>
       </div>
     </section>
@@ -89,7 +89,7 @@
     <section id="loading" class="overlay hidden">
       <div class="loading-card glass">
         <div class="brand brand-lg">ZUSMO <b>FF</b></div>
-        <div id="loading-status">Preparing World...</div>
+        <div id="loading-status">Menyiapkan dunia...</div>
         <div class="progress-track"><div id="loading-bar"></div></div>
         <div class="progress-meta"><b id="loading-percent">0%</b><span id="loading-bytes">0 MB / 0 MB</span></div>
       </div>
@@ -98,37 +98,37 @@
     <section id="load-error" class="overlay hidden">
       <div class="error-card glass">
         <div class="error-badge">!</div>
-        <h2>LOAD FAILED</h2>
-        <p id="error-message">Asset failed to load.</p>
+        <h2>GAGAL MEMUAT</h2>
+        <p id="error-message">Aset gagal dimuat.</p>
         <div class="error-actions">
-          <button id="btn-retry" class="btn primary">RETRY</button>
+          <button id="btn-retry" class="btn primary">COBA LAGI</button>
           <button id="btn-error-menu" class="btn ghost">MENU</button>
         </div>
       </div>
     </section>
 
-    <section id="tuning-overlay" class="overlay tuning-overlay hidden" aria-label="Live game tuning">
+    <section id="tuning-overlay" class="overlay tuning-overlay hidden" aria-label="Pengaturan langsung game">
       <div class="tuning-panel glass">
         <div class="tuning-head">
           <div class="tuning-title-wrap">
-            <div class="eyebrow">LIVE TUNE</div>
-            <h1>LIVE TUNE</h1>
+            <div class="eyebrow">ATUR LANGSUNG</div>
+            <h1>ATUR LANGSUNG</h1>
           </div>
           <div class="tuning-head-actions">
-            <span id="tuning-save-state" class="tuning-save-state">LIVE</span>
-            <button id="btn-move-tuning" class="mini-head-btn" type="button" aria-label="Move tune popup">MOVE</button>
-            <button class="icon-btn tune-close" data-close-tuning aria-label="Close settings">×</button>
+            <span id="tuning-save-state" class="tuning-save-state">LANGSUNG</span>
+            <button id="btn-move-tuning" class="mini-head-btn" type="button" aria-label="Pindahkan popup pengaturan">PINDAH</button>
+            <button class="icon-btn tune-close" data-close-tuning aria-label="Tutup pengaturan">×</button>
           </div>
         </div>
         <div class="tuning-quickbar">
-          <div id="tuning-tabs" class="tuning-tabs" aria-label="Tuning categories"></div>
+          <div id="tuning-tabs" class="tuning-tabs" aria-label="Kategori pengaturan"></div>
         </div>
         <div class="tuning-scroll">
           <div id="tuning-controls" class="tuning-controls"></div>
         </div>
         <div class="tuning-footer">
-          <button id="btn-reset-tuning" class="mini-action danger-soft" type="button">RESET</button>
-          <button id="btn-copy-tuning" class="mini-action copy-action" type="button">COPY SETTING</button>
+          <button id="btn-reset-tuning" class="mini-action danger-soft" type="button">ATUR ULANG</button>
+          <button id="btn-copy-tuning" class="mini-action copy-action" type="button">SALIN PENGATURAN</button>
           <button id="btn-save-tuning" class="mini-action primary" type="button">SIMPAN</button>
         </div>
       </div>
@@ -137,18 +137,18 @@
     <section id="hud" class="hidden">
       <div class="top-hud">
         <span id="hud-map">CT</span>
-        <button class="hud-chip tune-chip" data-open-tuning aria-label="Tune settings">TUNE</button>
-        <button class="hud-chip hud-fullscreen" data-fullscreen aria-label="Fullscreen">FULL</button>
+        <button class="hud-chip tune-chip" data-open-tuning aria-label="Buka pengaturan">ATUR</button>
+        <button class="hud-chip hud-fullscreen" data-fullscreen aria-label="Layar penuh">PENUH</button>
         <button id="btn-exit" class="hud-chip">MENU</button>
       </div>
-      <div id="camera-zone" aria-label="Camera drag zone"></div>
+      <div id="camera-zone" aria-label="Area geser kamera"></div>
       <div id="joystick" class="joystick"><div id="joystick-knob"></div></div>
       <div class="actions">
-        <button id="action-run" class="action run">RUN</button>
-        <button id="action-punch" class="action punch" aria-label="Punch">PUKUL</button>
-        <button id="action-jump" class="action">JUMP</button>
-        <button id="action-crouch" class="action">CROUCH</button>
-        <button id="action-prone" class="action">PRONE</button>
+        <button id="action-run" class="action run">LARI</button>
+        <button id="action-punch" class="action punch" aria-label="Pukul">PUKUL</button>
+        <button id="action-jump" class="action">LOMPAT</button>
+        <button id="action-crouch" class="action">JONGKOK</button>
+        <button id="action-prone" class="action">TIARAP</button>
       </div>
       <pre id="debug" class="debug hidden"></pre>
     </section>
@@ -157,11 +157,11 @@
   <script>
     window.__ZUSMO_BOOTED = false;
     setTimeout(() => {
-      if (!window.__ZUSMO_BOOTED) document.getElementById('engine-boot-text').textContent = 'Engine is taking longer than expected...';
+      if (!window.__ZUSMO_BOOTED) document.getElementById('engine-boot-text').textContent = 'Mesin 3D membutuhkan waktu lebih lama dari biasanya...';
     }, 8000);
     setTimeout(() => {
       if (!window.__ZUSMO_BOOTED) {
-        document.getElementById('engine-boot-text').innerHTML = '3D engine failed to load. Check internet/CDN, then <button onclick="location.reload()" class="inline-retry">RELOAD</button>';
+        document.getElementById('engine-boot-text').innerHTML = 'Mesin 3D gagal dimuat. Periksa internet/CDN, lalu <button onclick="location.reload()" class="inline-retry">MUAT ULANG</button>';
       }
     }, 18000);
   </script>
