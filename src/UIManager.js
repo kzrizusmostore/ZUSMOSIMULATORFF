@@ -112,6 +112,7 @@ export class UIManager {
     this.hud = document.getElementById('hud');
     this.debug = document.getElementById('debug');
     this.tuningOverlay = document.getElementById('tuning-overlay');
+    this.controlGuide = document.getElementById('control-guide');
     this.#renderCards();
     this.#renderTuningControls();
     this.#syncPreviewInfo();
@@ -144,8 +145,14 @@ export class UIManager {
   }
 
   showScreen(name) {
-    Object.values(this.screens).forEach((s) => s.classList.remove('active'));
-    this.screens[name]?.classList.add('active');
+    Object.values(this.screens).forEach((screen) => screen.classList.remove('active'));
+    const screen = this.screens[name];
+    screen?.classList.add('active');
+    if (screen) {
+      screen.scrollTop = 0;
+      screen.querySelectorAll('.panel,.card-list').forEach((el) => { try { el.scrollTop = 0; } catch (_) {} });
+    }
+    if (name === 'select') this.#syncSelectionSummary();
   }
 
   showLoading(totalBytes) {
@@ -180,12 +187,26 @@ export class UIManager {
     this.debug.classList.toggle('hidden', !debugEnabled);
     this.#syncQuality();
     this.#syncFullscreenButtons();
+    if (localStorage.getItem('zusmoff_guide_v20') !== '1') {
+      setTimeout(() => this.#showControlGuide(false), 220);
+    }
   }
 
   updateHUDQuality() {}
 
-  hideHUD() { this.hud.classList.add('hidden'); }
+  hideHUD() { this.hud.classList.add('hidden'); this.#hideControlGuide(); }
   updateDebug(text) { if (!this.debug.classList.contains('hidden')) this.debug.textContent = text; }
+
+  #showControlGuide(force = false) {
+    if (!this.controlGuide || this.hud.classList.contains('hidden')) return;
+    if (!force && localStorage.getItem('zusmoff_guide_v20') === '1') return;
+    this.controlGuide.classList.remove('hidden');
+  }
+
+  #hideControlGuide(save = false) {
+    this.controlGuide?.classList.add('hidden');
+    if (save) localStorage.setItem('zusmoff_guide_v20', '1');
+  }
 
   openTuning() {
     this.#renderTuningControls();
@@ -210,7 +231,7 @@ export class UIManager {
   }
 
   #bind() {
-    document.getElementById('btn-play').addEventListener('click', () => this.showScreen('select'));
+    document.getElementById('btn-play').addEventListener('click', () => { this.#syncSelectionSummary(); this.showScreen('select'); });
     document.getElementById('btn-settings').addEventListener('click', () => this.showScreen('settings'));
     document.querySelectorAll('[data-back="menu"]').forEach((b) => b.addEventListener('click', () => this.showScreen('menu')));
     document.querySelectorAll('[data-fullscreen]').forEach((b) => b.addEventListener('click', () => this.toggleFullscreen()));
@@ -223,6 +244,7 @@ export class UIManager {
       this.#setSaveState('TERSIMPAN • POSISI TETAP', 1500);
     });
     document.getElementById('btn-start').addEventListener('click', () => {
+      this.#hideControlGuide();
       this.#enterFullscreen();
       this.lastStart = this.getSelection();
       this.handlers.start?.(this.lastStart);
@@ -230,6 +252,9 @@ export class UIManager {
     document.getElementById('btn-retry').addEventListener('click', () => this.handlers.start?.(this.lastStart || this.getSelection()));
     document.getElementById('btn-error-menu').addEventListener('click', () => { this.error.classList.add('hidden'); this.showScreen('menu'); });
     document.getElementById('btn-exit').addEventListener('click', () => this.handlers.exit?.());
+    document.getElementById('btn-guide')?.addEventListener('click', () => this.#showControlGuide(true));
+    document.getElementById('btn-guide-close')?.addEventListener('click', () => this.#hideControlGuide(true));
+    document.getElementById('btn-guide-ok')?.addEventListener('click', () => this.#hideControlGuide(true));
     document.addEventListener('fullscreenchange', () => this.#syncFullscreenButtons());
     document.addEventListener('webkitfullscreenchange', () => this.#syncFullscreenButtons());
     window.addEventListener('resize', () => this.#clampTunePosition());
@@ -888,7 +913,7 @@ export class UIManager {
       const status = character.id === this.selectedCharacter ? 'DIPILIH' : (character.available ? 'PILIH' : 'TERKUNCI');
       button.innerHTML = `
         <span class="tune-character-code">${character.code || character.name.slice(0, 1).toUpperCase()}</span>
-        <span class="tune-character-info"><b>${character.name}</b><small>${character.bundled === false ? 'GLB dimuat hanya saat dipilih' : 'Aset karakter tersedia'}</small></span>
+        <span class="tune-character-info"><b>${character.name}</b><small>${character.bundled === false ? 'GLB dimuat setelah dipilih' : (character.rigged === false ? 'Model statis • tanpa rangka' : 'Rangka animasi tersedia')}</small></span>
         <span class="tune-character-status">${status}</span>`;
       button.addEventListener('click', () => this.#selectCharacter(character.id));
       grid.appendChild(button);
@@ -1029,13 +1054,28 @@ export class UIManager {
     }
   }
 
+  #syncSelectionSummary() {
+    const character = this.characters.find((c) => c.id === this.selectedCharacter);
+    const map = this.maps.find((m) => m.id === this.selectedMap);
+    const charEl = document.getElementById('selected-character-name');
+    const mapEl = document.getElementById('selected-map-name');
+    if (charEl) charEl.textContent = character?.name || '-';
+    if (mapEl) mapEl.textContent = map?.name || '-';
+    const start = document.getElementById('btn-start');
+    if (start) {
+      const ready = !!character?.available && !!map?.available;
+      start.disabled = !ready;
+      start.setAttribute('aria-disabled', String(!ready));
+    }
+  }
+
   #renderCards() {
     const characterList = document.getElementById('character-list');
     characterList.innerHTML = '';
     for (const c of this.characters) {
       const el = document.createElement('button');
       el.className = 'select-card';
-      el.innerHTML = `<span class="status">${!c.available ? 'TERKUNCI' : (c.bundled === false ? 'ASET EKSTERNAL' : 'TERSEDIA')}</span><span class="code">${c.code || 'K'}</span><b>${c.name}</b><small>${c.bundled === false ? 'Dimuat saat dipilih • aset GLB eksternal' : 'Rangka / tulang asli'}</small>`;
+      el.innerHTML = `<span class="status">${!c.available ? 'BELUM TERPASANG' : (c.bundled === false ? 'PERLU ASET' : 'TERSEDIA')}</span><span class="code">${c.code || 'K'}</span><b>${c.name}</b><small>${c.bundled === false ? 'File GLB belum tersedia' : (c.rigged === false ? 'Model statis • tanpa animasi tulang' : 'Rangka animasi tersedia')}</small>`;
       el.disabled = !c.available;
       el.addEventListener('click', () => this.#selectCharacter(c.id));
       el.classList.toggle('selected', this.selectedCharacter === c.id);
@@ -1047,7 +1087,7 @@ export class UIManager {
     for (const m of this.maps) {
       const el = document.createElement('button');
       el.className = 'select-card';
-      el.innerHTML = `<span class="status">${!m.available ? 'TERKUNCI' : (m.bundled === false ? 'ASET EKSTERNAL' : 'TERSEDIA')}</span><span class="code">${m.shortName}</span><b>${m.name}</b><small>${m.shortName} • ${m.bundled === false ? 'Dimuat saat dipilih • aset GLB eksternal' : 'Peta GLB asli'}</small>`;
+      el.innerHTML = `<span class="status">${!m.available ? 'BELUM TERPASANG' : (m.bundled === false ? 'PERLU ASET' : 'TERSEDIA')}</span><span class="code">${m.shortName}</span><b>${m.name}</b><small>${m.bundled === false ? 'File peta belum tersedia' : 'Peta siap dimainkan'}</small>`;
       el.disabled = !m.available;
       el.addEventListener('click', () => {
         this.selectedMap = m.id;
@@ -1059,6 +1099,7 @@ export class UIManager {
       el.classList.toggle('selected', this.selectedMap === m.id);
       mapList.appendChild(el);
     }
+    this.#syncSelectionSummary();
   }
 
   #valid(id, list) { return list.some((x) => x.id === id && x.available) ? id : null; }

@@ -16,26 +16,48 @@ export class CollisionSystem {
     this.bounds.copy(bounds);
   }
 
-  findSpawn(x = 0, z = 0, groundOffset = 0.018) {
-    if (!this.meshes.length) return new THREE.Vector3(x, 2, z);
-    const top = this.bounds.max.y + 20;
-    const offsets = [0, 18, -18, 36, -36];
-    const candidates = [];
+  findSpawn(x = 0, z = 0, groundOffset = 0.018, preferredY = null) {
+    if (!this.meshes.length) return new THREE.Vector3(x, (preferredY ?? 2) + groundOffset, z);
+    const top = this.bounds.max.y + 24;
     this.raycaster.near = 0;
-    this.raycaster.far = Math.max(100, this.bounds.max.y - this.bounds.min.y + 60);
+    this.raycaster.far = Math.max(120, this.bounds.max.y - this.bounds.min.y + 80);
+
+    const chooseSurface = (hits) => {
+      if (!hits.length) return null;
+      if (!Number.isFinite(preferredY)) return hits[0];
+      let best = hits[0];
+      let bestDelta = Math.abs(best.point.y - preferredY);
+      for (let i = 1; i < hits.length; i++) {
+        const delta = Math.abs(hits[i].point.y - preferredY);
+        if (delta < bestDelta) { best = hits[i]; bestDelta = delta; }
+      }
+      return best;
+    };
+
+    // Exact X/Z is always first priority. preferredY picks the intended floor
+    // when several surfaces overlap vertically (ground, balcony, roof, etc.).
+    this.raycaster.set(new THREE.Vector3(x, top, z), this.down);
+    const direct = chooseSurface(this.raycaster.intersectObjects(this.meshes, false));
+    if (direct) return new THREE.Vector3(x, direct.point.y + groundOffset, z);
+
+    const offsets = [3, -3, 8, -8, 16, -16, 28, -28];
+    const candidates = [];
     for (const dx of offsets) {
       for (const dz of offsets) {
         this.raycaster.set(new THREE.Vector3(x + dx, top, z + dz), this.down);
-        const hit = this.raycaster.intersectObjects(this.meshes, false)[0];
-        if (hit) candidates.push({ x: x + dx, z: z + dz, y: hit.point.y });
+        const hit = chooseSurface(this.raycaster.intersectObjects(this.meshes, false));
+        if (hit) {
+          const verticalPenalty = Number.isFinite(preferredY) ? Math.abs(hit.point.y - preferredY) * 0.2 : 0;
+          candidates.push({ x: x + dx, z: z + dz, y: hit.point.y, score: dx * dx + dz * dz + verticalPenalty });
+        }
       }
     }
     if (candidates.length) {
-      candidates.sort((a, b) => a.y - b.y || (Math.abs(a.x - x) + Math.abs(a.z - z)) - (Math.abs(b.x - x) + Math.abs(b.z - z)));
+      candidates.sort((a, b) => a.score - b.score);
       const best = candidates[0];
       return new THREE.Vector3(best.x, best.y + groundOffset, best.z);
     }
-    return new THREE.Vector3(0, this.bounds.max.y + 2, 0);
+    return new THREE.Vector3(x, (Number.isFinite(preferredY) ? preferredY : this.bounds.max.y + 2) + groundOffset, z);
   }
 
   groundHeight(x, currentY, z, maxDistance = 6) {

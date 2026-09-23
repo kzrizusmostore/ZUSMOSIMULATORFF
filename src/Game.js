@@ -393,12 +393,8 @@ export class Game {
   #disposePreviewRoot() {
     if (!this.preview.root || !this.preview.scene) return;
     this.preview.scene.remove(this.preview.root);
-    this.preview.root.traverse((obj) => {
-      if (!obj.isMesh) return;
-      obj.geometry?.dispose?.();
-      const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
-      mats.filter(Boolean).forEach((mat) => mat.dispose?.());
-    });
+    // SkeletonUtils.clone berbagi geometry/material dengan karakter utama.
+    // Jangan dispose resource preview karena akan merusak model di dunia game.
     this.preview.root = null;
     this.preview.sourceRoot = null;
     this.preview.sourceNodes = null;
