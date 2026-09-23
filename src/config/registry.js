@@ -41,9 +41,9 @@ export const CHARACTERS = [
     name: 'Rouk',
     code: 'R',
     asset: './assets/characters/free_fire_rouk_ff_3d_model.glb',
-    bytes: 0,
+    bytes: 1124240,
     available: true,
-    bundled: false,
+    bundled: true,
     targetHeight: 1.72
   }
 ];
