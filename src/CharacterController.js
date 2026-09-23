@@ -1,15 +1,15 @@
 import * as THREE from 'three';
 
 const DEFAULT_MOVEMENT = {
-  walkSpeed: 4.0,
-  runSpeed: 5.15,
-  crouchSpeed: 1.8,
+  walkSpeed: 4.5,
+  runSpeed: 7.5,
+  crouchSpeed: 2.3,
   proneSpeed: 0.9,
   acceleration: 14.0,
   deceleration: 18.0,
-  turnSpeed: 14.0,
-  jumpPower: 4.05,
-  gravity: 22.5
+  turnSpeed: 24.0,
+  jumpPower: 4.0,
+  gravity: 16.5
 };
 
 const DEFAULT_GROUNDING = {
@@ -105,7 +105,7 @@ export class CharacterController {
       this.group.quaternion.slerp(this.targetQuaternion, 1 - Math.exp(-this.settings.turnSpeed * dt));
     }
 
-    const colliderHeight = (this.stance === 'prone' ? 0.48 : this.stance === 'crouch' ? 1.08 : 1.68) * this.characterScale;
+    const colliderHeight = (this.stance === 'prone' ? 0.34 : this.stance === 'crouch' ? 1.02 : 1.68) * this.characterScale;
     this.delta.set(this.velocity.x * dt, 0, this.velocity.z * dt);
     this.delta.copy(this.collision.resolveHorizontal(this.group.position, this.delta, colliderHeight));
     this.group.position.add(this.delta);

@@ -21,7 +21,7 @@ export class AssetLoader {
       return await this.loader.parseAsync(buffer.slice(0), basePath);
     } catch (error) {
       this.bufferCache.delete(url);
-      const e = new Error(`Could not parse ${definition.name || definition.id}: ${error?.message || error}`);
+      const e = new Error(`Tidak dapat membaca ${definition.name || definition.id}: ${error?.message || error}`);
       e.cause = error;
       throw e;
     }
@@ -29,7 +29,7 @@ export class AssetLoader {
 
   async #fetchBuffer(url, expectedBytes, onProgress) {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort('Asset timeout'), 120000);
+    const timeout = setTimeout(() => controller.abort('Waktu memuat aset habis'), 120000);
     try {
       const response = await fetch(url, { signal: controller.signal, cache: 'force-cache' });
       if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`);
@@ -61,8 +61,8 @@ export class AssetLoader {
       }
       return result.buffer;
     } catch (error) {
-      if (error?.name === 'AbortError') throw new Error(`Timeout while loading ${url}`);
-      throw new Error(`Failed to load ${url}: ${error?.message || error}`);
+      if (error?.name === 'AbortError') throw new Error(`Waktu habis saat memuat ${url}`);
+      throw new Error(`Gagal memuat ${url}: ${error?.message || error}`);
     } finally {
       clearTimeout(timeout);
     }

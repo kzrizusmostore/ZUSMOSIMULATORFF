@@ -24,33 +24,81 @@ const BONE_KEYS = {
   rHand: 'bone_RightHand_046'
 };
 
-// V15 was rebuilt against the supplied Free Fire reference recording.
-// These controls remain tuneable, but RESET returns to this reference preset.
+
+const BONE_ALIASES = {
+  hips: ['hips','pelvis','mixamorighips'],
+  spine: ['spine','spine01','mixamorigspine'],
+  chest: ['spine1','spine2','chest','upperchest','mixamorigspine1','mixamorigspine2'],
+  neck: ['neck','mixamorigneck'],
+  head: ['head','mixamorighead'],
+  lClav: ['leftclav','leftshoulder','claviclel','shoulderl','mixamorigleftshoulder'],
+  rClav: ['rightclav','rightshoulder','clavicler','shoulderr','mixamorigrightshoulder'],
+  lUpperLeg: ['leftlegupper','leftupleg','thighl','upperlegl','mixamorigleftupleg'],
+  lLeg: ['leftleg','calfl','lowerlegl','mixamorigleftleg'],
+  lAnkle: ['leftankle','leftfoot','footl','mixamorigleftfoot'],
+  lToe: ['lefttoe','toel','mixamoriglefttoebase'],
+  rUpperLeg: ['rightlegupper','rightupleg','thighr','upperlegr','mixamorigrightupleg'],
+  rLeg: ['rightleg','calfr','lowerlegr','mixamorigrightleg'],
+  rAnkle: ['rightankle','rightfoot','footr','mixamorigrightfoot'],
+  rToe: ['righttoe','toer','mixamorigrighttoebase'],
+  lArm: ['leftarm','leftupperarm','upperarml','mixamorigleftarm'],
+  lForeArm: ['leftforearm','leftlowerarm','forearml','lowerarml','mixamorigleftforearm'],
+  lHand: ['lefthand','handl','mixamoriglefthand'],
+  rArm: ['rightarm','rightupperarm','upperarmr','mixamorigrightarm'],
+  rForeArm: ['rightforearm','rightlowerarm','forearmr','lowerarmr','mixamorigrightforearm'],
+  rHand: ['righthand','handr','mixamorigrighthand']
+};
+
+function normalizeBoneName(name = '') {
+  return String(name).toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function resolveBone(bones, key, exactName) {
+  const exact = bones.get(exactName);
+  if (exact) return exact;
+  const aliases = BONE_ALIASES[key] || [];
+  for (const bone of bones.values()) {
+    const normalized = normalizeBoneName(bone.name);
+    if (aliases.some((alias) => normalized === normalizeBoneName(alias))) return bone;
+  }
+  return null;
+}
+
+// V18 memakai preset dasar dari ZUSMO FF PENGATURAN V16 yang diberikan pengguna.
 const DEFAULT_ANIMATION = {
-  intensity: 1.0,
-  walkStride: 1.0,
-  runStride: 1.0,
-  armSwing: 1.0,
-  kneeLift: 1.0,
-  bodyBob: 0.74,
-  hipSway: 0.72,
+  intensity: 1.7,
+  walkStride: 1.25,
+  runStride: 1.55,
+  armSwing: 1.25,
+  kneeLift: 0.75,
+  bodyBob: 1.0,
+  hipSway: 0.8,
   cadence: 1.0,
-  blend: 1.30,
-  lean: 1.0,
+  blend: 0.95,
+  lean: 0.4,
   idleArmDown: 0.35,
-  idleElbowBend: 0.12,
+  idleElbowBend: 0.35,
   idleArmTwist: 0.0,
   idleShoulderRelax: 0.04,
   idleHandRelax: 0.06,
-  idleBreathing: 0.42,
-  idleHeadMotion: 0.24
+  idleBreathing: 1.8,
+  idleHeadMotion: 1.25
 };
 
 const DEFAULT_MOTION = {
-  walkSpeed: 4.00,
-  runSpeed: 5.15,
-  crouchSpeed: 1.80,
-  proneSpeed: 0.90
+  walkSpeed: 4.5,
+  runSpeed: 7.5,
+  crouchSpeed: 2.3,
+  proneSpeed: 0.9
+};
+
+const DEFAULT_ACTIONS = {
+  walk: { stride: 1, arms: 1, knees: 1, bob: 1, sway: 1, cadence: 1 },
+  run: { stride: 1, arms: 1, knees: 1, bob: 1, sway: 1, cadence: 1, lean: 1 },
+  jump: { tuck: 1, arms: 1, lean: 1, landing: 1 },
+  crouch: { depth: 1, stride: 1, arms: 1, lean: 1, cadence: 1 },
+  prone: { bodyPitch: 1.30, groundHeight: 0.10, crawlStride: 1, armReach: 1, legKick: 1, headLift: 1, cadence: 1 },
+  punch: { speed: 1, reach: 1, guard: 1, torso: 1, windup: 1 }
 };
 
 export class AnimationController {
@@ -68,6 +116,7 @@ export class AnimationController {
     this.context = { verticalVelocity: 0, grounded: true };
     this.settings = { ...DEFAULT_ANIMATION };
     this.motion = { ...DEFAULT_MOTION };
+    this.actions = JSON.parse(JSON.stringify(DEFAULT_ACTIONS));
     this.rest = new Map();
     this.current = new Map();
     this.target = new Map();
@@ -79,13 +128,14 @@ export class AnimationController {
     this.visualBob = 0;
     this.visualTilt = 0;
     this.visualRoll = 0;
+    this.poseBaseY = this.posePivot?.position?.y || 0;
     this.landPulse = 0;
     this.punchTime = -1;
     this.punchSide = -1;
     this.punchDuration = 0.42;
 
     for (const [key, name] of Object.entries(BONE_KEYS)) {
-      const bone = characterInfo.bones.get(name);
+      const bone = resolveBone(characterInfo.bones, key, name);
       if (!bone) continue;
       this.rest.set(key, {
         bone,
@@ -103,8 +153,15 @@ export class AnimationController {
   setTuning(tuning) {
     const anim = tuning?.animation || tuning || {};
     const movement = tuning?.movement || {};
+    const actions = tuning?.actions || {};
     this.settings = { ...DEFAULT_ANIMATION, ...anim };
     this.motion = { ...DEFAULT_MOTION, ...movement };
+    this.actions = {};
+    for (const [name, defaults] of Object.entries(DEFAULT_ACTIONS)) {
+      this.actions[name] = { ...defaults, ...(actions[name] || {}) };
+    }
+    this.poseBaseY = Number(tuning?.character?.footOffset) || 0;
+    this.punchDuration = 0.42 / THREE.MathUtils.clamp(this.actions.punch.speed, 0.55, 1.8);
   }
 
   triggerPunch() {
@@ -144,6 +201,7 @@ export class AnimationController {
     let bob = 0;
     let tiltX = 0;
     let rollZ = 0;
+    let poseLift = 0;
     const state = this.state;
 
     if (state === 'IDLE') this.#idle();
@@ -155,16 +213,19 @@ export class AnimationController {
     else if (state === 'CROUCH_IDLE' || state === 'CROUCH_WALK') {
       const entering = !this.prevState.startsWith('CROUCH');
       const t = entering ? this.#smooth01(this.stateTime / 0.20) : 1;
-      yOffset = THREE.MathUtils.lerp(0, -0.39, t);
+      yOffset = THREE.MathUtils.lerp(0, -0.39 * this.actions.crouch.depth, t);
       const out = this.#crouch(state === 'CROUCH_WALK', dt, t);
       bob = out.bob; rollZ = out.rollZ; tiltX = out.tiltX;
     } else if (state === 'PRONE_IDLE' || state === 'PRONE_CRAWL') {
       const entering = !this.prevState.startsWith('PRONE');
-      const t = entering ? this.#smooth01(this.stateTime / 0.48) : 1;
-      // V14 used +1.48 which put Naruto on his BACK. The supplied video makes
-      // the bug obvious. Negative X pitches him chest-down like Free Fire.
-      tiltX = THREE.MathUtils.lerp(-0.10, -1.49, t);
-      yOffset = THREE.MathUtils.lerp(-0.36, -0.035, t);
+      const t = entering ? this.#smooth01(this.stateTime / 0.42) : 1;
+      const prone = this.actions.prone;
+      // Pivot tetap pada kaki, tetapi pose tidak lagi dibuat seperti tubuh
+      // telentang lurus. Sudut sedikit kurang dari 90 derajat, dada dinaikkan
+      // dari tanah, kepala diangkat, dan siku menopang tubuh.
+      tiltX = THREE.MathUtils.lerp(-0.12, -prone.bodyPitch, t);
+      yOffset = 0;
+      poseLift = THREE.MathUtils.lerp(0, prone.groundHeight, t);
       const out = this.#prone(state === 'PRONE_CRAWL', dt, t);
       bob = out.bob; rollZ = out.rollZ;
     }
@@ -202,6 +263,8 @@ export class AnimationController {
     if (this.posePivot) {
       this.posePivot.rotation.x = this.visualTilt;
       this.posePivot.rotation.z = this.visualRoll;
+      const targetPoseY = this.poseBaseY + poseLift;
+      this.posePivot.position.y = THREE.MathUtils.damp(this.posePivot.position.y, targetPoseY, state.startsWith('PRONE') ? 12 : 18, dt);
     }
   }
 
@@ -247,11 +310,12 @@ export class AnimationController {
   #locomotion(runRequested, dt) {
     const S = this.settings;
     const I = S.intensity;
+    const A = runRequested ? this.actions.run : this.actions.walk;
     const walkBase = Math.max(0.5, this.motion.walkSpeed);
     const runBase = Math.max(walkBase + 0.1, this.motion.runSpeed);
     const runBlend = runRequested ? this.#smooth01((this.speed - walkBase * 0.92) / Math.max(0.35, runBase - walkBase * 0.92)) : 0;
     const speedNorm = THREE.MathUtils.clamp(this.speed / THREE.MathUtils.lerp(walkBase, runBase, runBlend), 0.28, 1.12);
-    const cycleHz = THREE.MathUtils.lerp(1.38, 1.82, runBlend) * THREE.MathUtils.lerp(0.86, 1.05, speedNorm) * S.cadence;
+    const cycleHz = THREE.MathUtils.lerp(1.38, 1.82, runBlend) * THREE.MathUtils.lerp(0.86, 1.05, speedNorm) * S.cadence * A.cadence;
     this.phase = (this.phase + dt * cycleHz) % 1;
 
     const phase = this.phase * Math.PI * 2;
@@ -262,17 +326,17 @@ export class AnimationController {
     const backR = Math.max(0, leg);
     const doubleStep = Math.cos(phase * 2);
 
-    const hipAmp = THREE.MathUtils.lerp(0.235, 0.405, runBlend) * THREE.MathUtils.lerp(S.walkStride, S.runStride, runBlend) * I;
-    const kneeBase = THREE.MathUtils.lerp(0.08, 0.12, runBlend) * S.kneeLift * I;
-    const kneeFront = THREE.MathUtils.lerp(0.25, 0.47, runBlend) * S.kneeLift * I;
-    const kneeBack = THREE.MathUtils.lerp(0.12, 0.35, runBlend) * S.kneeLift * I;
+    const hipAmp = THREE.MathUtils.lerp(0.235, 0.405, runBlend) * THREE.MathUtils.lerp(S.walkStride, S.runStride, runBlend) * A.stride * I;
+    const kneeBase = THREE.MathUtils.lerp(0.08, 0.12, runBlend) * S.kneeLift * A.knees * I;
+    const kneeFront = THREE.MathUtils.lerp(0.25, 0.47, runBlend) * S.kneeLift * A.knees * I;
+    const kneeBack = THREE.MathUtils.lerp(0.12, 0.35, runBlend) * S.kneeLift * A.knees * I;
     const ankleAmp = THREE.MathUtils.lerp(0.035, 0.070, runBlend) * I;
 
-    const bobAmp = THREE.MathUtils.lerp(0.006, 0.010, runBlend) * S.bodyBob * I;
-    const swayAmp = THREE.MathUtils.lerp(0.010, 0.017, runBlend) * S.hipSway * I;
+    const bobAmp = THREE.MathUtils.lerp(0.006, 0.010, runBlend) * S.bodyBob * A.bob * I;
+    const swayAmp = THREE.MathUtils.lerp(0.010, 0.017, runBlend) * S.hipSway * A.sway * I;
     const hipYaw = -leg * THREE.MathUtils.lerp(0.018, 0.030, runBlend) * S.hipSway * I;
     const torsoYaw = -hipYaw * 1.45;
-    const lean = -THREE.MathUtils.lerp(0.018, 0.105, runBlend) * S.lean * I;
+    const lean = -THREE.MathUtils.lerp(0.018, 0.105, runBlend) * S.lean * (A.lean ?? 1) * I;
 
     this.#setPos('hips', Math.sin(phase) * swayAmp * 0.16, (1 - doubleStep) * 0.5 * bobAmp, 0);
     this.#set('hips', 0, hipYaw, Math.cos(phase) * swayAmp);
@@ -292,7 +356,7 @@ export class AnimationController {
 
     // Free Fire reference: the forward arm is strongly elbow-bent near the
     // chest; the rear arm extends back but never flies far away from the torso.
-    const armAmp = THREE.MathUtils.lerp(0.13, 0.30, runBlend) * S.armSwing * I;
+    const armAmp = THREE.MathUtils.lerp(0.13, 0.30, runBlend) * S.armSwing * A.arms * I;
     const down = THREE.MathUtils.lerp(0.37, 0.31, runBlend) * I;
     const frontBend = THREE.MathUtils.lerp(0.34, 0.82, runBlend) * I;
     const rearBend = THREE.MathUtils.lerp(0.18, 0.30, runBlend) * I;
@@ -313,18 +377,19 @@ export class AnimationController {
     return {
       bob: (1 - doubleStep) * 0.5 * bobAmp * 0.28,
       rollZ: -Math.cos(phase) * swayAmp * 0.24,
-      tiltX: THREE.MathUtils.lerp(0, -0.035, runBlend) * S.lean * I
+      tiltX: THREE.MathUtils.lerp(0, -0.035, runBlend) * S.lean * (A.lean ?? 1) * I
     };
   }
 
   #jump(falling) {
     const I = this.settings.intensity;
+    const A = this.actions.jump;
     const t = this.#smooth01(Math.min(1, this.stateTime / (falling ? 0.18 : 0.16)));
     const leadLeft = Math.sin(this.phase * Math.PI * 2) >= 0;
-    const lead = falling ? 0.26 : THREE.MathUtils.lerp(0.20, 0.34, t);
-    const trail = falling ? 0.10 : THREE.MathUtils.lerp(0.08, 0.15, t);
-    const leadKnee = falling ? 0.46 : THREE.MathUtils.lerp(0.34, 0.64, t);
-    const trailKnee = falling ? 0.25 : THREE.MathUtils.lerp(0.18, 0.32, t);
+    const lead = (falling ? 0.26 : THREE.MathUtils.lerp(0.20, 0.34, t)) * A.tuck;
+    const trail = (falling ? 0.10 : THREE.MathUtils.lerp(0.08, 0.15, t)) * A.tuck;
+    const leadKnee = (falling ? 0.46 : THREE.MathUtils.lerp(0.34, 0.64, t)) * A.tuck;
+    const trailKnee = (falling ? 0.25 : THREE.MathUtils.lerp(0.18, 0.32, t)) * A.tuck;
 
     this.#set('hips', 0, 0, (falling ? 0.012 : -0.018) * I);
     this.#set('spine', 0, 0, (falling ? 0.018 : -0.055) * I);
@@ -338,18 +403,19 @@ export class AnimationController {
 
     // Reference jump silhouette: shoulders open briefly at take-off, then both
     // forearms come forward with elbows bent while one knee leads.
-    const armOpen = falling ? 0.05 : (1 - t) * 0.12;
-    this.#set('lArm', 0, (0.29 - armOpen) * I, (-0.16 - armOpen) * I);
-    this.#set('rArm', 0, (-0.29 + armOpen) * I, (-0.16 - armOpen) * I);
-    this.#set('lForeArm', 0, 0.012 * I, -(falling ? 0.54 : 0.72) * I);
-    this.#set('rForeArm', 0, -0.012 * I, -(falling ? 0.54 : 0.72) * I);
-    return { yOffset: 0, tiltX: falling ? -0.015 * I : -0.045 * I };
+    const armOpen = (falling ? 0.05 : (1 - t) * 0.12) * A.arms;
+    this.#set('lArm', 0, (0.29 - armOpen) * I * A.arms, (-0.16 - armOpen) * I * A.arms);
+    this.#set('rArm', 0, (-0.29 + armOpen) * I * A.arms, (-0.16 - armOpen) * I * A.arms);
+    this.#set('lForeArm', 0, 0.012 * I, -(falling ? 0.54 : 0.72) * I * A.arms);
+    this.#set('rForeArm', 0, -0.012 * I, -(falling ? 0.54 : 0.72) * I * A.arms);
+    return { yOffset: 0, tiltX: (falling ? -0.015 : -0.045) * I * A.lean };
   }
 
   #land() {
     const I = this.settings.intensity;
+    const A = this.actions.jump;
     const p = THREE.MathUtils.clamp(this.landPulse, 0, 1);
-    const squash = p * p;
+    const squash = p * p * A.landing;
     this.#setPos('hips', 0, -0.028 * squash * I, 0);
     this.#set('hips', 0, 0, 0.050 * squash * I);
     this.#set('lUpperLeg', 0, 0, 0.44 * squash * I);
@@ -368,24 +434,25 @@ export class AnimationController {
   #crouch(moving, dt, transition = 1) {
     const S = this.settings;
     const I = S.intensity;
+    const A = this.actions.crouch;
     const speedNorm = THREE.MathUtils.clamp(this.speed / Math.max(0.3, this.motion.crouchSpeed), 0, 1.1);
-    if (moving) this.phase = (this.phase + dt * (1.02 + speedNorm * 0.32) * S.cadence) % 1;
+    if (moving) this.phase = (this.phase + dt * (1.02 + speedNorm * 0.32) * S.cadence * A.cadence) % 1;
     const p = this.phase * Math.PI * 2;
-    const step = moving ? Math.sin(p) : 0;
+    const step = moving ? Math.sin(p) * A.stride : 0;
     const t = transition;
 
     this.#set('hips', 0, step * 0.012 * S.hipSway * I * t, 0.08 * I * t);
-    this.#set('lUpperLeg', 0, 0, (0.90 + step * 0.11) * I * t);
-    this.#set('rUpperLeg', 0, 0, (0.90 - step * 0.11) * I * t);
-    this.#set('lLeg', 0, 0, (-1.32 - Math.max(0, -step) * 0.10) * I * t);
-    this.#set('rLeg', 0, 0, (-1.32 - Math.max(0, step) * 0.10) * I * t);
+    this.#set('lUpperLeg', 0, 0, (0.90 * A.depth + step * 0.11) * I * t);
+    this.#set('rUpperLeg', 0, 0, (0.90 * A.depth - step * 0.11) * I * t);
+    this.#set('lLeg', 0, 0, (-1.32 * A.depth - Math.max(0, -step) * 0.10) * I * t);
+    this.#set('rLeg', 0, 0, (-1.32 * A.depth - Math.max(0, step) * 0.10) * I * t);
     this.#set('lAnkle', 0, 0, (0.16 + Math.cos(p) * 0.04 * (moving ? 1 : 0)) * I * t);
     this.#set('rAnkle', 0, 0, (0.16 - Math.cos(p) * 0.04 * (moving ? 1 : 0)) * I * t);
-    this.#set('spine', 0, -step * 0.018 * I * t, -0.24 * I * t);
-    this.#set('chest', 0, step * 0.020 * I * t, -0.10 * I * t);
+    this.#set('spine', 0, -step * 0.018 * I * t, -0.24 * A.lean * I * t);
+    this.#set('chest', 0, step * 0.020 * I * t, -0.10 * A.lean * I * t);
     this.#set('neck', 0, 0, 0.055 * I * t);
 
-    const arm = moving ? step * 0.07 * S.armSwing * I : 0;
+    const arm = moving ? step * 0.07 * S.armSwing * A.arms * I : 0;
     this.#set('lArm', 0, 0.37 * I * t, (-0.10 + arm) * I * t);
     this.#set('rArm', 0, -0.37 * I * t, (-0.10 - arm) * I * t);
     this.#set('lForeArm', 0, 0.016 * I * t, -0.54 * I * t);
@@ -394,17 +461,18 @@ export class AnimationController {
     return {
       bob: moving ? Math.abs(Math.sin(p)) * 0.006 * S.bodyBob * I * t : 0,
       rollZ: moving ? -step * 0.008 * S.hipSway * I * t : 0,
-      tiltX: -0.115 * I * t
+      tiltX: -0.115 * A.lean * I * t
     };
   }
 
   #prone(moving, dt, transition = 1) {
     const S = this.settings;
     const I = S.intensity;
+    const A = this.actions.prone;
     const speedNorm = THREE.MathUtils.clamp(this.speed / Math.max(0.2, this.motion.proneSpeed), 0, 1.1);
-    if (moving) this.phase = (this.phase + dt * (0.72 + speedNorm * 0.26) * S.cadence) % 1;
+    if (moving) this.phase = (this.phase + dt * (0.72 + speedNorm * 0.26) * S.cadence * A.cadence) % 1;
     const p = this.phase * Math.PI * 2;
-    const s = moving ? Math.sin(p) : Math.sin(this.time * 1.0) * 0.05;
+    const s = moving ? Math.sin(p) * A.crawlStride : Math.sin(this.time * 1.0) * 0.035;
     const t = transition;
     const crouch = 1 - t;
 
@@ -414,21 +482,21 @@ export class AnimationController {
     this.#set('hips', 0, 0, (0.08 * crouch) * I);
     this.#set('spine', 0, -s * 0.020 * I * t, (-0.24 * crouch - 0.03 * t) * I);
     this.#set('chest', 0, s * 0.025 * I * t, (-0.10 * crouch + 0.10 * t) * I);
-    this.#set('neck', 0, -s * 0.010 * I * t, (0.055 * crouch - 0.08 * t) * I);
-    this.#set('head', -0.03 * I * t, -s * 0.012 * I * t, -0.10 * I * t);
+    this.#set('neck', 0, -s * 0.010 * I * t, (0.055 * crouch - 0.12 * A.headLift * t) * I);
+    this.#set('head', -0.03 * I * t, -s * 0.012 * I * t, -0.16 * A.headLift * I * t);
 
     // Elbows planted in front of the chest in prone; during the first half of
     // the transition they move forward from the crouch/thigh position.
-    this.#set('lArm', 0, (0.37 * crouch + 0.31 * t) * I, (-0.10 * crouch + (-0.34 + s * 0.09) * t) * I);
-    this.#set('rArm', 0, (-0.37 * crouch - 0.31 * t) * I, (-0.10 * crouch + (-0.34 - s * 0.09) * t) * I);
-    this.#set('lForeArm', 0, 0.014 * I, (-0.54 * crouch + (-0.92 - s * 0.15) * t) * I);
-    this.#set('rForeArm', 0, -0.014 * I, (-0.54 * crouch + (-0.92 + s * 0.15) * t) * I);
+    this.#set('lArm', 0, (0.37 * crouch + 0.31 * t) * I, (-0.10 * crouch + (-0.34 * A.armReach + s * 0.09) * t) * I);
+    this.#set('rArm', 0, (-0.37 * crouch - 0.31 * t) * I, (-0.10 * crouch + (-0.34 * A.armReach - s * 0.09) * t) * I);
+    this.#set('lForeArm', 0, 0.014 * I, (-0.54 * crouch + (-0.92 * A.armReach - s * 0.15) * t) * I);
+    this.#set('rForeArm', 0, -0.014 * I, (-0.54 * crouch + (-0.92 * A.armReach + s * 0.15) * t) * I);
 
     // Folded crouch legs progressively extend behind the character.
-    this.#set('lUpperLeg', 0, 0, (0.90 * crouch + (0.04 + s * 0.09) * t) * I);
-    this.#set('rUpperLeg', 0, 0, (0.90 * crouch + (0.04 - s * 0.09) * t) * I);
-    this.#set('lLeg', 0, 0, (-1.32 * crouch + (-0.12 - Math.max(0, -s) * 0.15) * t) * I);
-    this.#set('rLeg', 0, 0, (-1.32 * crouch + (-0.12 - Math.max(0, s) * 0.15) * t) * I);
+    this.#set('lUpperLeg', 0, 0, (0.90 * crouch + (0.04 + s * 0.09 * A.legKick) * t) * I);
+    this.#set('rUpperLeg', 0, 0, (0.90 * crouch + (0.04 - s * 0.09 * A.legKick) * t) * I);
+    this.#set('lLeg', 0, 0, (-1.32 * crouch + (-0.12 - Math.max(0, -s) * 0.15 * A.legKick) * t) * I);
+    this.#set('rLeg', 0, 0, (-1.32 * crouch + (-0.12 - Math.max(0, s) * 0.15 * A.legKick) * t) * I);
     this.#set('lAnkle', 0, 0, (0.16 * crouch - s * 0.035 * t) * I);
     this.#set('rAnkle', 0, 0, (0.16 * crouch + s * 0.035 * t) * I);
 
@@ -440,6 +508,7 @@ export class AnimationController {
 
   #punchOverlay() {
     const I = this.settings.intensity;
+    const A = this.actions.punch;
     const u = THREE.MathUtils.clamp(this.punchTime / this.punchDuration, 0, 1);
     const wind = u < 0.20 ? this.#smooth01(u / 0.20) : 1;
     const strike = u < 0.20 ? 0 : u < 0.48 ? this.#smooth01((u - 0.20) / 0.28) : 1;
@@ -453,7 +522,7 @@ export class AnimationController {
     const guardFore = rightPunch ? 'lForeArm' : 'rForeArm';
     const sideSign = rightPunch ? -1 : 1;
     const guardSign = -sideSign;
-    const torso = sideSign * (0.10 * prep + 0.22 * hit) * I;
+    const torso = sideSign * (0.10 * prep * A.windup + 0.22 * hit) * I * A.torso;
 
     this.#add('hips', 0, torso * 0.26, 0);
     this.#add('spine', 0, torso * 0.55, -0.035 * hit * I);
@@ -461,9 +530,9 @@ export class AnimationController {
 
     // Clear wind-up then visible extension. The rear/guard hand remains by the
     // cheek/chest instead of dropping to the side.
-    this.#add(punchArm, 0, sideSign * (0.04 * prep - 0.01 * hit) * I, (-0.28 * prep - 0.78 * hit) * I);
-    this.#add(punchFore, 0, sideSign * 0.014 * I, (-0.88 * prep + 0.60 * hit) * I);
-    this.#add(guardArm, 0, guardSign * 0.03 * I, -0.17 * (wind + hit) * I);
-    this.#add(guardFore, 0, guardSign * 0.010 * I, -0.72 * (wind + hit) * I);
+    this.#add(punchArm, 0, sideSign * (0.04 * prep * A.windup - 0.01 * hit) * I, (-0.28 * prep * A.windup - 0.78 * hit * A.reach) * I);
+    this.#add(punchFore, 0, sideSign * 0.014 * I, (-0.88 * prep * A.windup + 0.60 * hit * A.reach) * I);
+    this.#add(guardArm, 0, guardSign * 0.03 * I, -0.17 * (wind + hit) * I * A.guard);
+    this.#add(guardFore, 0, guardSign * 0.010 * I, -0.72 * (wind + hit) * I * A.guard);
   }
 }

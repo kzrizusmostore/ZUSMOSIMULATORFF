@@ -34,6 +34,7 @@ export class Game {
     this.animation = null;
     this.gameActive = false;
     this.loadGeneration = 0;
+    this.characterSwapGeneration = 0;
     this.currentMap = null;
     this.currentCharacter = null;
     this.currentGraphics = 'hd';
@@ -96,24 +97,27 @@ export class Game {
     this.graphics.setQuality(this.currentGraphics);
     this.#applyTuning();
 
-    const total = (mapDef.bytes || 0) + (charDef.bytes || 0);
-    this.ui.showLoading(total);
+    let mapTotal = mapDef.bytes || 0;
+    let charTotal = charDef.bytes || 0;
     let mapLoaded = 0;
     let charLoaded = 0;
+    this.ui.showLoading(mapTotal + charTotal);
 
     const updateTransfer = (status) => {
-      const loaded = Math.min(total, mapLoaded + charLoaded);
+      const total = Math.max(mapLoaded, mapTotal) + Math.max(charLoaded, charTotal);
+      const loaded = Math.min(total || (mapLoaded + charLoaded), mapLoaded + charLoaded);
       const pct = total ? (loaded / total) * 92 : 0;
       this.ui.updateLoading(pct, status, loaded, total);
     };
 
     try {
       const mapGltf = await this.assetLoader.loadGLB(mapDef, (p) => {
-        mapLoaded = Math.min(mapDef.bytes || p.total || p.loaded, p.loaded);
+        mapTotal = p.total || mapTotal || p.loaded;
+        mapLoaded = Math.min(mapTotal, p.loaded);
         updateTransfer(`Memuat ${mapDef.name}...`);
       });
       if (generation !== this.loadGeneration) return;
-      mapLoaded = mapDef.bytes;
+      mapLoaded = mapTotal || mapDef.bytes || mapLoaded;
       updateTransfer(`Memproses ${mapDef.name}...`);
       await this.#nextFrame();
 
@@ -124,29 +128,31 @@ export class Game {
         this.scene.fog.near = mapDef.environment.fogNear || 120;
         this.scene.fog.far = mapDef.environment.fogFar || 300;
       }
-      this.ui.updateLoading(total ? (mapLoaded / total) * 92 : 0, 'Clock Tower siap. Memuat Naruto...', mapLoaded, total);
+      this.ui.updateLoading((mapTotal + charTotal) ? (mapLoaded / (mapTotal + charTotal)) * 92 : 46, `${mapDef.name} siap. Memuat ${charDef.name}...`, mapLoaded, mapTotal + charTotal);
 
       const charGltf = await this.assetLoader.loadGLB(charDef, (p) => {
-        charLoaded = Math.min(charDef.bytes || p.total || p.loaded, p.loaded);
+        charTotal = p.total || charTotal || p.loaded;
+        charLoaded = Math.min(charTotal, p.loaded);
         updateTransfer(`Memuat ${charDef.name}...`);
       });
       if (generation !== this.loadGeneration) return;
-      charLoaded = charDef.bytes;
-      this.ui.updateLoading(94, 'Menyiapkan rangka karakter...', total, total);
+      charLoaded = charTotal || charDef.bytes || charLoaded;
+      const totalBytes = mapTotal + charTotal;
+      this.ui.updateLoading(94, `Menyiapkan rangka ${charDef.name}...`, totalBytes, totalBytes);
       await this.#nextFrame();
 
       const characterInfo = this.characterManager.install(charDef, charGltf);
       this.graphics.trackObject(this.characterManager.group, 'character');
-      console.info('[ZUSMO FF] Naruto dimuat');
+      console.info(`[ZUSMO FF] ${charDef.name} dimuat`);
       console.info(`[ZUSMO FF] Rangka terdeteksi: ${characterInfo.skeletonCount > 0}`);
       console.info(`[ZUSMO FF] Jumlah tulang: ${characterInfo.boneCount}`);
       console.info(`[ZUSMO FF] Klip animasi: ${characterInfo.animations.map((a) => a.name || '(tanpa nama)').join(', ') || 'tidak ada - animasi tulang prosedural aktif'}`);
 
       if (characterInfo.skeletonCount < 1 || characterInfo.boneCount < 1) {
-        throw new Error('Naruto berhasil dimuat, tetapi rangka/tulang asli tidak terdeteksi.');
+        throw new Error(`${charDef.name} berhasil dimuat, tetapi rangka/tulang asli tidak terdeteksi.`);
       }
 
-      this.ui.updateLoading(98, 'Menyiapkan tekstur...', total, total);
+      this.ui.updateLoading(98, 'Menyiapkan tekstur...', totalBytes, totalBytes);
       await this.#nextFrame();
       const spawnConfig = this.#getSpawnConfig(mapDef);
       const spawn = this.#resolveSpawnPoint(mapDef, spawnConfig);
@@ -166,7 +172,7 @@ export class Game {
       );
       this.cameraRig.reset(spawn);
       this.#applyTuning();
-      this.ui.updateLoading(100, 'Memasuki dunia...', total, total);
+      this.ui.updateLoading(100, 'Memasuki dunia...', totalBytes, totalBytes);
       await this.#nextFrame();
       if (generation !== this.loadGeneration) return;
 
@@ -179,7 +185,78 @@ export class Game {
       if (generation !== this.loadGeneration) return;
       this.gameActive = false;
       this.input.setEnabled(false);
-      this.ui.showError(`${error?.message || error}\n\nJalur aset mengikuti index.html. Jalankan melalui HTTP/HTTPS (GitHub Pages, Netlify, atau server lokal), bukan file://.`);
+      const detail = `${error?.message || error}`;
+      this.ui.showError(`${detail}\n\nPastikan file GLB karakter/peta yang dipilih berada pada jalur aset di registry. Aset baru memang baru diunduh setelah kamu menekan MULAI.`);
+    }
+  }
+
+  async changeCharacter(characterId, tuning = null) {
+    const charDef = this.characters.find((x) => x.id === characterId && x.available);
+    if (!charDef) throw new Error('Karakter yang dipilih tidak tersedia.');
+    if (!this.gameActive || !this.characterManager.group) return false;
+    if (this.currentCharacter?.id === charDef.id) return true;
+
+    const generation = ++this.characterSwapGeneration;
+    const position = this.characterManager.group.position.clone();
+    const yaw = this.characterManager.group.rotation.y;
+    const previousGroup = this.characterManager.group;
+    const activeTuning = tuning || this.tuning;
+    let loaded = 0;
+    let total = charDef.bytes || 0;
+
+    this.input.setEnabled(false);
+    this.ui.showLoading(total);
+    try {
+      const gltf = await this.assetLoader.loadGLB(charDef, (progress) => {
+        total = progress.total || total || progress.loaded;
+        loaded = Math.min(total, progress.loaded);
+        const pct = total ? (loaded / total) * 92 : 0;
+        this.ui.updateLoading(pct, `Memuat ${charDef.name}...`, loaded, total);
+      });
+      if (generation !== this.characterSwapGeneration || !this.gameActive) {
+        this.ui.hideLoading();
+        this.input.setEnabled(this.gameActive);
+        return false;
+      }
+
+      let boneCount = 0;
+      let skinnedCount = 0;
+      gltf.scene.traverse((obj) => {
+        if (obj.isBone) boneCount++;
+        if (obj.isSkinnedMesh) skinnedCount++;
+      });
+      if (boneCount < 1 || skinnedCount < 1) {
+        throw new Error(`${charDef.name} tidak memiliki rangka/skinned mesh yang dapat dipakai.`);
+      }
+
+      if (previousGroup) this.graphics.untrackObject(previousGroup);
+      const characterInfo = this.characterManager.install(charDef, gltf);
+      this.graphics.trackObject(this.characterManager.group, 'character');
+      this.characterManager.spawn(position, yaw);
+      this.characterManager.setVisualTuning(activeTuning);
+      this.animation = new AnimationController(characterInfo, this.characterManager.baseVisualY, activeTuning);
+      this.controller = new CharacterController(
+        this.characterManager.group,
+        this.input,
+        this.cameraRig,
+        this.collision,
+        this.animation,
+        position,
+        activeTuning,
+        yaw
+      );
+      this.currentCharacter = charDef;
+      this.tuning = activeTuning;
+      this.#applyTuning();
+      this.ui.updateLoading(100, `${charDef.name} siap.`, total || loaded, total || loaded);
+      await this.#nextFrame();
+      this.ui.hideLoading();
+      this.input.setEnabled(true);
+      return true;
+    } catch (error) {
+      this.ui.hideLoading();
+      this.input.setEnabled(true);
+      throw error;
     }
   }
 

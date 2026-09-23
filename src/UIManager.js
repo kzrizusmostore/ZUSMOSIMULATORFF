@@ -1,33 +1,41 @@
 const DEFAULT_TUNING = {
   movement: {
-    walkSpeed: 4.0,
-    runSpeed: 5.15,
-    crouchSpeed: 1.8,
+    walkSpeed: 4.5,
+    runSpeed: 7.5,
+    crouchSpeed: 2.3,
     proneSpeed: 0.9,
-    acceleration: 14.0,
-    deceleration: 18.0,
-    turnSpeed: 14.0,
-    jumpPower: 4.05,
-    gravity: 22.5
+    acceleration: 14,
+    deceleration: 18,
+    turnSpeed: 24,
+    jumpPower: 4,
+    gravity: 16.5
   },
   animation: {
-    intensity: 1.0,
-    walkStride: 1.0,
-    runStride: 1.0,
-    armSwing: 1.0,
-    kneeLift: 1.0,
-    bodyBob: 0.74,
-    hipSway: 0.72,
-    cadence: 1.00,
-    blend: 1.30,
-    lean: 1.0,
+    intensity: 1.7,
+    walkStride: 1.25,
+    runStride: 1.55,
+    armSwing: 1.25,
+    kneeLift: 0.75,
+    bodyBob: 1,
+    hipSway: 0.8,
+    cadence: 1,
+    blend: 0.95,
+    lean: 0.4,
     idleArmDown: 0.35,
-    idleElbowBend: 0.12,
-    idleArmTwist: 0.0,
+    idleElbowBend: 0.35,
+    idleArmTwist: 0,
     idleShoulderRelax: 0.04,
     idleHandRelax: 0.06,
-    idleBreathing: 0.42,
-    idleHeadMotion: 0.24
+    idleBreathing: 1.8,
+    idleHeadMotion: 1.25
+  },
+  actions: {
+    walk: { stride: 1, arms: 1, knees: 1, bob: 1, sway: 1, cadence: 1 },
+    run: { stride: 1, arms: 1, knees: 1, bob: 1, sway: 1, cadence: 1, lean: 1 },
+    jump: { tuck: 1, arms: 1, lean: 1, landing: 1 },
+    crouch: { depth: 1, stride: 1, arms: 1, lean: 1, cadence: 1 },
+    prone: { bodyPitch: 1.30, groundHeight: 0.10, crawlStride: 1, armReach: 1, legKick: 1, headLift: 1, cadence: 1 },
+    punch: { speed: 1, reach: 1, guard: 1, torso: 1, windup: 1 }
   },
   character: {
     scale: 0.71,
@@ -36,23 +44,25 @@ const DEFAULT_TUNING = {
   grounding: {
     groundOffset: 0.018,
     snapDistance: 0.62,
-    landingDistance: 0.20,
+    landingDistance: 0.2,
     probeDistance: 7.5
   },
-  mapSpawns: {},
+  mapSpawns: {
+    'clock-tower': { x: 5.27, z: -8.21, y: 24.56, yaw: 36 }
+  },
   graphics: {
     profiles: {
       standard: {
-        exposure: 1.00,
-        lighting: { hemisphere: 1.08, ambient: 0.20, sun: 1.55, fill: 0.38 },
-        map: { brightness: 0.90, contrast: 1.02, saturation: 0.98, sharpness: 0.00, shadows: 0.00, highlights: -0.08, gamma: 1.00, warmth: 0.00 },
-        character: { brightness: 0.99, contrast: 1.03, saturation: 1.02, sharpness: 0.00, shadows: 0.03, highlights: -0.02, gamma: 1.00, warmth: 0.02 }
+        exposure: 1,
+        lighting: { hemisphere: 1.08, ambient: 0.2, sun: 1.55, fill: 0.38 },
+        map: { brightness: 0.9, contrast: 1.02, saturation: 0.98, sharpness: 0, shadows: 0, highlights: -0.08, gamma: 1, warmth: 0 },
+        character: { brightness: 0.99, contrast: 1.03, saturation: 1.02, sharpness: 0, shadows: 0.03, highlights: -0.02, gamma: 1, warmth: 0.02 }
       },
       hd: {
-        exposure: 1.16,
-        lighting: { hemisphere: 1.30, ambient: 0.30, sun: 1.88, fill: 0.54 },
-        map: { brightness: 1.08, contrast: 1.04, saturation: 1.05, sharpness: 0.50, shadows: 0.11, highlights: 0.03, gamma: 1.04, warmth: 0.00 },
-        character: { brightness: 1.10, contrast: 1.05, saturation: 1.07, sharpness: 0.50, shadows: 0.12, highlights: 0.03, gamma: 1.04, warmth: 0.03 }
+        exposure: 1.15,
+        lighting: { hemisphere: 2, ambient: 0.36, sun: 1.85, fill: 2.5 },
+        map: { brightness: 1.08, contrast: 1.04, saturation: 1.05, sharpness: 0.5, shadows: 0.11, highlights: 0.03, gamma: 1.04, warmth: 0 },
+        character: { brightness: 1.1, contrast: 1.1, saturation: 1.4, sharpness: 1, shadows: 0.1, highlights: 0.2, gamma: 1.1, warmth: 0 }
       }
     }
   }
@@ -74,6 +84,11 @@ export class UIManager {
     this.maps = maps;
     this.characters = characters;
     this.defaults = defaults;
+    if (localStorage.getItem('zusmoff_defaults_v18') !== '1') {
+      localStorage.setItem('zusmoff_map', defaults.map);
+      localStorage.setItem('zusmoff_character', defaults.character);
+      localStorage.setItem('zusmoff_defaults_v18', '1');
+    }
     this.selectedMap = this.#valid(localStorage.getItem('zusmoff_map'), maps) || defaults.map;
     this.selectedCharacter = this.#valid(localStorage.getItem('zusmoff_character'), characters) || defaults.character;
     this.graphics = 'hd';
@@ -251,7 +266,7 @@ export class UIManager {
       const spanY = Math.max(1, vp.height - rect.height);
       const nx = THREE_SAFE((rect.left - vp.left) / spanX);
       const ny = THREE_SAFE((rect.top - vp.top) / spanY);
-      localStorage.setItem('zusmoff_tune_position_v13', JSON.stringify({ nx, ny }));
+      localStorage.setItem('zusmoff_tune_position_v18', JSON.stringify({ nx, ny }));
       this.tuneDrag = null;
       panel.classList.remove('is-dragging');
       try { handle.releasePointerCapture?.(event.pointerId); } catch (_) {}
@@ -280,10 +295,10 @@ export class UIManager {
     requestAnimationFrame(() => {
       const vp = this.#viewportBounds();
       const rect = panel.getBoundingClientRect();
-      let nx = 0.02;
-      let ny = 0.12;
+      let nx = 0.50;
+      let ny = 0.08;
       try {
-        const pos = JSON.parse(localStorage.getItem('zusmoff_tune_position_v13') || 'null');
+        const pos = JSON.parse(localStorage.getItem('zusmoff_tune_position_v18') || 'null');
         if (pos && Number.isFinite(pos.nx) && Number.isFinite(pos.ny)) {
           nx = Math.max(0, Math.min(1, pos.nx));
           ny = Math.max(0, Math.min(1, pos.ny));
@@ -375,50 +390,118 @@ export class UIManager {
     const range = mapDef?.spawnRange || { xMin: -250, xMax: 250, yMin: -10, yMax: 160, zMin: -250, zMax: 250 };
     return [
       {
-        id: 'movement', label: 'GERAK', title: 'GERAKAN', subtitle: 'Atur kecepatan dan respons kontrol karakter.',
+        id: 'movement', label: 'KONTROL', title: 'KONTROL GERAK', subtitle: 'Respons gerak global. Kecepatan dan parameter tiap aksi berada di tab aksi masing-masing.',
         controls: [
-          ['Kecepatan Jalan', 'movement.walkSpeed', 2.5, 6.0, 0.05, ' m/s'],
-          ['Kecepatan Lari', 'movement.runSpeed', 4.5, 9.0, 0.05, ' m/s'],
-          ['Kecepatan Jongkok', 'movement.crouchSpeed', 0.6, 3.0, 0.05, ' m/s'],
-          ['Kecepatan Tiarap', 'movement.proneSpeed', 0.3, 1.6, 0.05, ' m/s'],
-          ['Akselerasi', 'movement.acceleration', 5, 25, 0.5, ''],
-          ['Perlambatan', 'movement.deceleration', 5, 28, 0.5, ''],
-          ['Kecepatan Berputar', 'movement.turnSpeed', 5, 24, 0.5, ''],
-          ['Kekuatan Lompat', 'movement.jumpPower', 3.2, 8.0, 0.05, ''],
-          ['Gravitasi', 'movement.gravity', 12, 34, 0.5, '']
+          ['Akselerasi', 'movement.acceleration', 5, 30, 0.5, ''],
+          ['Perlambatan', 'movement.deceleration', 5, 32, 0.5, ''],
+          ['Kecepatan Berputar', 'movement.turnSpeed', 5, 30, 0.5, '']
         ]
       },
       {
-        id: 'animation', label: 'ANIMASI', title: 'ANIMASI', subtitle: 'Atur gerakan rangka Naruto secara langsung.',
+        id: 'walk', label: 'JALAN', title: 'ANIMASI BERJALAN', subtitle: 'Pengaturan berjalan berdiri. Tidak mengubah lari, jongkok, atau tiarap.',
         controls: [
-          ['Intensitas Gerak', 'animation.intensity', 0.55, 1.70, 0.01, '×'],
-          ['Langkah Jalan', 'animation.walkStride', 0.55, 1.65, 0.01, '×'],
-          ['Langkah Lari', 'animation.runStride', 0.55, 1.55, 0.01, '×'],
-          ['Ayunan Tangan', 'animation.armSwing', 0.50, 1.75, 0.01, '×'],
-          ['Angkat Lutut', 'animation.kneeLift', 0.50, 1.75, 0.01, '×'],
-          ['Naik Turun Badan', 'animation.bodyBob', 0.00, 1.70, 0.01, '×'],
-          ['Ayunan Pinggul', 'animation.hipSway', 0.00, 1.70, 0.01, '×'],
-          ['Irama Langkah', 'animation.cadence', 0.65, 1.45, 0.01, '×'],
-          ['Kehalusan Transisi', 'animation.blend', 0.55, 1.80, 0.01, '×'],
-          ['Condong Saat Lari', 'animation.lean', 0.30, 1.60, 0.01, '×']
+          ['Kecepatan Jalan', 'movement.walkSpeed', 2.5, 7.0, 0.05, ' m/s'],
+          ['Panjang Langkah', 'actions.walk.stride', 0.45, 1.80, 0.01, '×'],
+          ['Ayunan Tangan', 'actions.walk.arms', 0.30, 1.80, 0.01, '×'],
+          ['Angkat Lutut', 'actions.walk.knees', 0.30, 1.80, 0.01, '×'],
+          ['Naik Turun Badan', 'actions.walk.bob', 0.00, 1.80, 0.01, '×'],
+          ['Ayunan Pinggul', 'actions.walk.sway', 0.00, 1.80, 0.01, '×'],
+          ['Irama Langkah', 'actions.walk.cadence', 0.55, 1.60, 0.01, '×']
         ]
       },
       {
-        id: 'idle', label: 'DIAM', title: 'POSE SAAT DIAM', subtitle: 'Atur posisi tangan dan badan saat Naruto berhenti. Nilai Tangan Turun 0 akan mendekati T-pose.',
+        id: 'run', label: 'LARI', title: 'ANIMASI BERLARI', subtitle: 'Pengaturan khusus lari; benar-benar terpisah dari berjalan.',
+        controls: [
+          ['Kecepatan Lari', 'movement.runSpeed', 4.0, 10.0, 0.05, ' m/s'],
+          ['Panjang Langkah', 'actions.run.stride', 0.45, 1.90, 0.01, '×'],
+          ['Ayunan Tangan', 'actions.run.arms', 0.30, 1.90, 0.01, '×'],
+          ['Angkat Lutut', 'actions.run.knees', 0.30, 1.90, 0.01, '×'],
+          ['Naik Turun Badan', 'actions.run.bob', 0.00, 1.90, 0.01, '×'],
+          ['Ayunan Pinggul', 'actions.run.sway', 0.00, 1.90, 0.01, '×'],
+          ['Irama Langkah', 'actions.run.cadence', 0.55, 1.70, 0.01, '×'],
+          ['Condong Saat Lari', 'actions.run.lean', 0.20, 1.80, 0.01, '×']
+        ]
+      },
+      {
+        id: 'jump', label: 'LOMPAT', title: 'ANIMASI LOMPAT', subtitle: 'Kekuatan lompat, gravitasi, pose udara, dan pendaratan khusus aksi lompat.',
+        controls: [
+          ['Kekuatan Lompat', 'movement.jumpPower', 2.5, 7.0, 0.05, ''],
+          ['Gravitasi', 'movement.gravity', 10, 30, 0.5, ''],
+          ['Tekukan Lutut Udara', 'actions.jump.tuck', 0.25, 1.80, 0.01, '×'],
+          ['Gerak Tangan Udara', 'actions.jump.arms', 0.25, 1.80, 0.01, '×'],
+          ['Condong Badan', 'actions.jump.lean', 0.20, 1.80, 0.01, '×'],
+          ['Redaman Mendarat', 'actions.jump.landing', 0.20, 1.80, 0.01, '×']
+        ]
+      },
+      {
+        id: 'crouch', label: 'JONGKOK', title: 'ANIMASI JONGKOK', subtitle: 'Kedalaman jongkok dan gerakan saat berjalan jongkok.',
+        controls: [
+          ['Kecepatan Jongkok', 'movement.crouchSpeed', 0.6, 4.0, 0.05, ' m/s'],
+          ['Kedalaman Jongkok', 'actions.crouch.depth', 0.45, 1.45, 0.01, '×'],
+          ['Panjang Langkah', 'actions.crouch.stride', 0.30, 1.70, 0.01, '×'],
+          ['Ayunan Tangan', 'actions.crouch.arms', 0.20, 1.70, 0.01, '×'],
+          ['Condong Badan', 'actions.crouch.lean', 0.30, 1.70, 0.01, '×'],
+          ['Irama Gerak', 'actions.crouch.cadence', 0.50, 1.60, 0.01, '×']
+        ]
+      },
+      {
+        id: 'prone', label: 'TIARAP', title: 'ANIMASI TIARAP', subtitle: 'Pose dada menghadap tanah dan gerakan merayap. Ini terpisah dari jongkok.',
+        controls: [
+          ['Kecepatan Tiarap', 'movement.proneSpeed', 0.2, 2.0, 0.05, ' m/s'],
+          ['Kemiringan Badan', 'actions.prone.bodyPitch', 0.95, 1.50, 0.01, ' rad'],
+          ['Ketinggian Dada dari Tanah', 'actions.prone.groundHeight', 0.02, 0.22, 0.005, ' m'],
+          ['Panjang Merayap', 'actions.prone.crawlStride', 0.20, 1.80, 0.01, '×'],
+          ['Jangkauan Tangan', 'actions.prone.armReach', 0.30, 1.80, 0.01, '×'],
+          ['Gerak Kaki', 'actions.prone.legKick', 0.20, 1.80, 0.01, '×'],
+          ['Angkat Kepala', 'actions.prone.headLift', 0.20, 1.80, 0.01, '×'],
+          ['Irama Merayap', 'actions.prone.cadence', 0.45, 1.60, 0.01, '×']
+        ]
+      },
+      {
+        id: 'punch', label: 'PUKUL', title: 'ANIMASI PUKUL', subtitle: 'Kecepatan, jangkauan, guard, dan putaran badan saat memukul.',
+        controls: [
+          ['Kecepatan Pukulan', 'actions.punch.speed', 0.55, 1.80, 0.01, '×'],
+          ['Jangkauan Pukulan', 'actions.punch.reach', 0.40, 1.80, 0.01, '×'],
+          ['Posisi Tangan Penjaga', 'actions.punch.guard', 0.30, 1.70, 0.01, '×'],
+          ['Putaran Badan', 'actions.punch.torso', 0.30, 1.70, 0.01, '×'],
+          ['Tarikan Awal', 'actions.punch.windup', 0.30, 1.70, 0.01, '×']
+        ]
+      },
+      {
+        id: 'idle', label: 'DIAM', title: 'POSE SAAT DIAM', subtitle: 'Pose berdiri diam dan gerakan napas/kepala.',
         controls: [
           ['Tangan Turun', 'animation.idleArmDown', 0.00, 1.45, 0.01, ' rad'],
           ['Tekuk Siku', 'animation.idleElbowBend', 0.00, 0.80, 0.01, ' rad'],
           ['Putar Lengan', 'animation.idleArmTwist', -0.40, 0.40, 0.01, ' rad'],
           ['Rileks Bahu', 'animation.idleShoulderRelax', 0.00, 0.30, 0.01, '×'],
           ['Rileks Tangan', 'animation.idleHandRelax', 0.00, 0.45, 0.01, '×'],
-          ['Napas', 'animation.idleBreathing', 0.00, 1.80, 0.01, '×'],
-          ['Gerak Halus Kepala', 'animation.idleHeadMotion', 0.00, 1.80, 0.01, '×']
+          ['Napas', 'animation.idleBreathing', 0.00, 2.40, 0.01, '×'],
+          ['Gerak Halus Kepala', 'animation.idleHeadMotion', 0.00, 2.00, 0.01, '×']
         ]
       },
       {
-        id: 'character', label: 'UKURAN/TANAH', title: 'UKURAN KARAKTER & TANAH', subtitle: 'Sesuaikan ukuran Naruto dan posisi telapak kaki terhadap permukaan map.',
+        id: 'general-animation', label: 'UMUM', title: 'ANIMASI UMUM', subtitle: 'Pengali dasar dari preset V16 yang kamu kirim. Tab aksi di atas tetap independen.',
         controls: [
-          ['Ukuran Karakter', 'character.scale', 0.70, 1.35, 0.01, '×'],
+          ['Intensitas Gerak', 'animation.intensity', 0.55, 2.00, 0.01, '×'],
+          ['Langkah Jalan Dasar', 'animation.walkStride', 0.55, 1.80, 0.01, '×'],
+          ['Langkah Lari Dasar', 'animation.runStride', 0.55, 1.90, 0.01, '×'],
+          ['Ayunan Tangan Dasar', 'animation.armSwing', 0.40, 1.90, 0.01, '×'],
+          ['Angkat Lutut Dasar', 'animation.kneeLift', 0.30, 1.80, 0.01, '×'],
+          ['Naik Turun Dasar', 'animation.bodyBob', 0.00, 1.80, 0.01, '×'],
+          ['Ayunan Pinggul Dasar', 'animation.hipSway', 0.00, 1.80, 0.01, '×'],
+          ['Irama Dasar', 'animation.cadence', 0.60, 1.60, 0.01, '×'],
+          ['Kehalusan Transisi', 'animation.blend', 0.55, 1.80, 0.01, '×'],
+          ['Condong Dasar', 'animation.lean', 0.10, 1.60, 0.01, '×']
+        ]
+      },
+      {
+        id: 'character-select', label: 'PILIH KARAKTER', title: 'GANTI KARAKTER', subtitle: 'Karakter dapat diganti kapan saja. Saat sedang bermain, hanya GLB karakter yang dipilih yang dimuat.',
+        controls: [], kind: 'characters'
+      },
+      {
+        id: 'character', label: 'UKURAN & TANAH', title: 'UKURAN KARAKTER & TANAH', subtitle: `Ukuran ${charDef?.name || 'karakter'} serta penempelan ke permukaan peta.`,
+        controls: [
+          ['Ukuran Karakter', 'character.scale', 0.60, 1.35, 0.01, '×'],
           ['Koreksi Posisi Telapak', 'character.footOffset', -0.25, 0.25, 0.005, ' m'],
           ['Koreksi Posisi Tanah', 'grounding.groundOffset', -0.08, 0.16, 0.002, ' m'],
           ['Jarak Menempel Tanah', 'grounding.snapDistance', 0.10, 1.40, 0.02, ' m'],
@@ -427,7 +510,7 @@ export class UIManager {
         ]
       },
       {
-        id: 'spawn', label: 'TITIK MUNCUL', title: `TITIK MUNCUL PETA • ${mapDef?.shortName || 'PETA'}`, subtitle: `Titik muncul disimpan khusus untuk ${mapDef?.name || 'peta ini'}. X/Y/Z memilih lokasi; Y dipakai untuk memilih lantai/permukaan peta yang paling dekat.`,
+        id: 'spawn', label: 'TITIK MUNCUL', title: `TITIK MUNCUL • ${mapDef?.shortName || 'PETA'}`, subtitle: `Disimpan khusus untuk ${mapDef?.name || 'peta ini'}.`,
         controls: [
           ['Posisi X', `${spawnPath}.x`, range.xMin, range.xMax, 0.25, ' m'],
           ['Posisi Y / Lantai', `${spawnPath}.y`, range.yMin, range.yMax, 0.25, ' m'],
@@ -438,21 +521,21 @@ export class UIManager {
         spawn
       },
       {
-        id: 'world', label: 'CAHAYA', title: 'PENCAHAYAAN DUNIA', subtitle: 'Atur pencahayaan dunia secara langsung.',
+        id: 'world', label: 'CAHAYA', title: 'PENCAHAYAAN DUNIA', subtitle: 'Pencahayaan HD tetap untuk peta dan karakter.',
         controls: [
           ['Eksposur', `${profile}.exposure`, 0.65, 1.65, 0.01, ''],
-          ['Cahaya Langit', `${profile}.lighting.hemisphere`, 0.0, 3.0, 0.01, ''],
+          ['Cahaya Langit', `${profile}.lighting.hemisphere`, 0.0, 3.5, 0.01, ''],
           ['Cahaya Sekitar', `${profile}.lighting.ambient`, 0.0, 1.5, 0.01, ''],
           ['Matahari', `${profile}.lighting.sun`, 0.0, 4.0, 0.01, ''],
-          ['Cahaya Pengisi', `${profile}.lighting.fill`, 0.0, 2.5, 0.01, '']
+          ['Cahaya Pengisi', `${profile}.lighting.fill`, 0.0, 3.5, 0.01, '']
         ]
       },
       {
-        id: 'map', label: 'PETA', title: 'TAMPILAN PETA', subtitle: `Atur filter ${mapDef?.name || 'peta'} secara langsung.`,
+        id: 'map', label: 'TAMPILAN PETA', title: 'TAMPILAN PETA', subtitle: `Filter ${mapDef?.name || 'peta'} secara langsung.`,
         controls: FILTER_CONTROLS.map((c) => [c[0], `${profile}.map.${c[1]}`, ...c.slice(2)])
       },
       {
-        id: 'charfilter', label: 'KARAKTER', title: 'TAMPILAN KARAKTER', subtitle: `Atur filter ${charDef?.name || 'karakter'} secara langsung.`,
+        id: 'charfilter', label: 'TAMPILAN KARAKTER', title: 'TAMPILAN KARAKTER', subtitle: `Filter ${charDef?.name || 'karakter'} secara langsung.`,
         controls: FILTER_CONTROLS.map((c) => [c[0], `${profile}.character.${c[1]}`, ...c.slice(2)])
       }
     ];
@@ -484,6 +567,7 @@ export class UIManager {
       const group = this.#makeGroup(groupDef.title, groupDef.subtitle, groupDef.controls);
       group.dataset.tuneGroup = groupDef.id;
       group.classList.toggle('active', groupDef.id === this.activeTuneTab);
+      if (groupDef.kind === 'characters') this.#appendCharacterSelector(group);
       if (groupDef.id === 'spawn') this.#appendSpawnActions(group, groupDef.mapId);
       root.appendChild(group);
     }
@@ -708,13 +792,13 @@ export class UIManager {
   async #copyTuningSettings() {
     const payload = {
       type: 'ZUSMO_FF_TUNE',
-      version: 17,
+      version: 18,
       map: this.selectedMap,
       character: this.selectedCharacter,
       graphics: 'HD_TETAP',
       tuning: this.#clone(this.tuning)
     };
-    const text = `ZUSMO FF PENGATURAN V17\n${JSON.stringify(payload, null, 2)}`;
+    const text = `ZUSMO FF PENGATURAN V18\n${JSON.stringify(payload, null, 2)}`;
     let copied = false;
 
     try {
@@ -776,6 +860,58 @@ export class UIManager {
       area.select();
       area.setSelectionRange(0, area.value.length);
     });
+  }
+
+  #appendCharacterSelector(group) {
+    const grid = document.createElement('div');
+    grid.className = 'tune-character-grid';
+    for (const character of this.characters) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'tune-character-card';
+      button.classList.toggle('selected', character.id === this.selectedCharacter);
+      button.disabled = !character.available;
+      const status = character.id === this.selectedCharacter ? 'DIPILIH' : (character.available ? 'PILIH' : 'TERKUNCI');
+      button.innerHTML = `
+        <span class="tune-character-code">${character.code || character.name.slice(0, 1).toUpperCase()}</span>
+        <span class="tune-character-info"><b>${character.name}</b><small>${character.bundled === false ? 'GLB dimuat hanya saat dipilih' : 'Aset karakter tersedia'}</small></span>
+        <span class="tune-character-status">${status}</span>`;
+      button.addEventListener('click', () => this.#selectCharacter(character.id));
+      grid.appendChild(button);
+    }
+    group.appendChild(grid);
+    const note = document.createElement('p');
+    note.className = 'tune-character-note';
+    note.textContent = 'Mengganti karakter saat bermain tidak memuat ulang peta. Hanya file karakter yang dipilih yang diunduh.';
+    group.appendChild(note);
+  }
+
+  async #selectCharacter(characterId) {
+    const character = this.characters.find((c) => c.id === characterId && c.available);
+    if (!character) return false;
+    const previousCharacter = this.selectedCharacter;
+    const changed = previousCharacter !== characterId;
+    this.selectedCharacter = characterId;
+    localStorage.setItem('zusmoff_character', characterId);
+    this.#renderCards();
+    if (!this.tuningOverlay.classList.contains('hidden')) this.#renderTuningControls();
+    if (!changed) return true;
+
+    this.#setSaveState(`KARAKTER • ${character.name.toUpperCase()}`);
+    try {
+      const swapped = await this.handlers.character?.(characterId, this.#clone(this.tuning));
+      if (swapped) this.#setSaveState(`AKTIF • ${character.name.toUpperCase()}`, 1500);
+      else this.#setSaveState(`DIPILIH • ${character.name.toUpperCase()}`, 1300);
+      return true;
+    } catch (error) {
+      console.error('[ZUSMO FF] Gagal mengganti karakter', error);
+      this.selectedCharacter = previousCharacter;
+      localStorage.setItem('zusmoff_character', previousCharacter);
+      this.#renderCards();
+      if (!this.tuningOverlay.classList.contains('hidden')) this.#renderTuningControls();
+      this.#setSaveState('GAGAL MEMUAT KARAKTER', 2200);
+      return false;
+    }
   }
 
   #appendSpawnActions(group, mapId) {
@@ -849,33 +985,18 @@ export class UIManager {
 
   #loadTuning() {
     try {
-      const currentRaw = localStorage.getItem('zusmoff_tuning_v15');
+      const currentRaw = localStorage.getItem('zusmoff_tuning_v18');
       if (currentRaw) return this.#deepMerge(this.#clone(DEFAULT_TUNING), JSON.parse(currentRaw) || {});
+    } catch (_) {}
 
-      // Nilai V15 tetap dipertahankan; hanya perilaku kamera/analog yang kembali ke versi awal.
-      // Untuk versi lebih lama, pertahankan ukuran, kecepatan, kalibrasi dunia,
-      // titik muncul, dan grafis tanpa membawa amplitudo animasi lama.
-      const legacyRaw = localStorage.getItem('zusmoff_tuning_v14') || localStorage.getItem('zusmoff_tuning_v13') || localStorage.getItem('zusmoff_tuning_v11') || localStorage.getItem('zusmoff_tuning_v10') || localStorage.getItem('zusmoff_tuning_v9') || localStorage.getItem('zusmoff_tuning_v8') || 'null';
-      const legacy = JSON.parse(legacyRaw) || {};
-      const next = this.#clone(DEFAULT_TUNING);
-      const mv = legacy.movement || {};
-      for (const key of ['walkSpeed','runSpeed','crouchSpeed','proneSpeed','acceleration','deceleration','turnSpeed','gravity']) {
-        if (Number.isFinite(mv[key])) next.movement[key] = mv[key];
-      }
-      const ch = legacy.character || {};
-      if (Number.isFinite(ch.scale)) next.character.scale = ch.scale;
-      if (Number.isFinite(ch.footOffset)) next.character.footOffset = ch.footOffset;
-      if (legacy.mapSpawns) next.mapSpawns = this.#clone(legacy.mapSpawns);
-      if (legacy.grounding) next.grounding = this.#deepMerge(next.grounding, legacy.grounding);
-      if (legacy.graphics) next.graphics = this.#deepMerge(next.graphics, legacy.graphics);
-      return next;
-    } catch (_) {
-      return this.#clone(DEFAULT_TUNING);
-    }
+    // V18 sengaja memakai preset baru yang diberikan pengguna sebagai default.
+    // Tuning versi lama tidak dibawa agar RESET dan instalasi lama sama-sama
+    // mendapatkan baseline baru yang konsisten.
+    return this.#clone(DEFAULT_TUNING);
   }
 
   #saveTuning() {
-    localStorage.setItem('zusmoff_tuning_v15', JSON.stringify(this.tuning));
+    localStorage.setItem('zusmoff_tuning_v18', JSON.stringify(this.tuning));
   }
 
   #setSaveState(message, resetAfter = 0) {
@@ -898,9 +1019,9 @@ export class UIManager {
     for (const c of this.characters) {
       const el = document.createElement('button');
       el.className = 'select-card';
-      el.innerHTML = `<span class="status">${c.available ? 'TERSEDIA' : 'TERKUNCI'}</span><span class="code">N</span><b>${c.name}</b><small>Rangka / tulang asli</small>`;
+      el.innerHTML = `<span class="status">${!c.available ? 'TERKUNCI' : (c.bundled === false ? 'ASET EKSTERNAL' : 'TERSEDIA')}</span><span class="code">${c.code || 'K'}</span><b>${c.name}</b><small>${c.bundled === false ? 'Dimuat saat dipilih • aset GLB eksternal' : 'Rangka / tulang asli'}</small>`;
       el.disabled = !c.available;
-      el.addEventListener('click', () => { this.selectedCharacter = c.id; localStorage.setItem('zusmoff_character', c.id); this.#renderCards(); });
+      el.addEventListener('click', () => this.#selectCharacter(c.id));
       el.classList.toggle('selected', this.selectedCharacter === c.id);
       characterList.appendChild(el);
     }
@@ -910,7 +1031,7 @@ export class UIManager {
     for (const m of this.maps) {
       const el = document.createElement('button');
       el.className = 'select-card';
-      el.innerHTML = `<span class="status">${m.available ? 'TERSEDIA' : 'TERKUNCI'}</span><span class="code">${m.shortName}</span><b>${m.name}</b><small>${m.shortName} • Peta GLB asli</small>`;
+      el.innerHTML = `<span class="status">${!m.available ? 'TERKUNCI' : (m.bundled === false ? 'ASET EKSTERNAL' : 'TERSEDIA')}</span><span class="code">${m.shortName}</span><b>${m.name}</b><small>${m.shortName} • ${m.bundled === false ? 'Dimuat saat dipilih • aset GLB eksternal' : 'Peta GLB asli'}</small>`;
       el.disabled = !m.available;
       el.addEventListener('click', () => {
         this.selectedMap = m.id;
