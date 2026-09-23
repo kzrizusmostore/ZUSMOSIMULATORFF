@@ -46,6 +46,9 @@ try {
     quality: (mode, tuning) => game?.setQuality(mode, tuning),
     tuning: (tuning) => game?.setTuning(tuning),
     character: (characterId, tuning) => game?.changeCharacter(characterId, tuning) ?? false,
+    previewOpen: (characterId) => game?.setTuningPreview(true, characterId) ?? false,
+    previewClose: () => game?.setTuningPreview(false),
+    previewCharacter: (characterId) => game?.setPreviewCharacter(characterId),
     captureSpawn: () => game?.captureSpawn() ?? null,
     teleportSpawn: (mapId, spawnConfig) => game?.teleportToSpawn(mapId, spawnConfig) ?? false
   });

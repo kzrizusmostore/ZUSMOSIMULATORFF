@@ -114,6 +114,7 @@ export class UIManager {
     this.tuningOverlay = document.getElementById('tuning-overlay');
     this.#renderCards();
     this.#renderTuningControls();
+    this.#syncPreviewInfo();
     this.#syncQuality();
     this.#bind();
     this.#syncFullscreenButtons();
@@ -191,9 +192,22 @@ export class UIManager {
     this.tuningOverlay.classList.remove('hidden');
     this.#applySavedTunePosition();
     this.#setSaveState('LANGSUNG');
+    this.#syncPreviewInfo();
+    this.handlers.previewOpen?.(this.selectedCharacter);
   }
 
-  closeTuning() { this.tuningOverlay.classList.add('hidden'); }
+  closeTuning() {
+    this.tuningOverlay.classList.add('hidden');
+    this.handlers.previewClose?.();
+  }
+
+  #syncPreviewInfo() {
+    const character = this.characters.find((c) => c.id === this.selectedCharacter) || this.characters[0];
+    const nameEl = document.getElementById('tuning-preview-name');
+    const noteEl = document.getElementById('tuning-preview-note');
+    if (nameEl) nameEl.textContent = character ? character.name : 'Karakter aktif';
+    if (noteEl) noteEl.textContent = 'Tampilan depan • latar kosong';
+  }
 
   #bind() {
     document.getElementById('btn-play').addEventListener('click', () => this.showScreen('select'));
@@ -895,6 +909,8 @@ export class UIManager {
     localStorage.setItem('zusmoff_character', characterId);
     this.#renderCards();
     if (!this.tuningOverlay.classList.contains('hidden')) this.#renderTuningControls();
+    this.#syncPreviewInfo();
+    this.handlers.previewCharacter?.(characterId);
     if (!changed) return true;
 
     this.#setSaveState(`KARAKTER • ${character.name.toUpperCase()}`);

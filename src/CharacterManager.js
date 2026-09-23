@@ -42,20 +42,32 @@ export class CharacterManager {
     const points = [];
     const temp = new THREE.Vector3();
     boneSet.forEach((b) => points.push(b.getWorldPosition(temp.clone())));
+
+    let measuredHeight = 0;
     if (points.length) {
       let minY = Infinity, maxY = -Infinity;
-      for (const p of points) { minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y); }
-      const rigHeight = Math.max(0.2, maxY - minY);
-      const scale = THREE.MathUtils.clamp((definition.targetHeight || 1.72) / rigHeight, 0.25, 6);
+      for (const point of points) {
+        minY = Math.min(minY, point.y);
+        maxY = Math.max(maxY, point.y);
+      }
+      measuredHeight = Math.max(0.2, maxY - minY);
+    } else {
+      const rawBounds = new THREE.Box3().setFromObject(visual);
+      if (!rawBounds.isEmpty() && Number.isFinite(rawBounds.min.y) && Number.isFinite(rawBounds.max.y)) {
+        measuredHeight = Math.max(0.2, rawBounds.max.y - rawBounds.min.y);
+      }
+    }
+
+    if (measuredHeight > 0) {
+      const scale = THREE.MathUtils.clamp((definition.targetHeight || 1.72) / measuredHeight, 0.25, 6);
       visual.scale.multiplyScalar(scale);
       visual.updateMatrixWorld(true);
+    }
 
-      // Ground the rendered mesh itself, not only the lowest bone.
-      // This removes the common visible gap between ankle/toe bones and shoe soles.
-      const meshBounds = new THREE.Box3().setFromObject(visual);
-      if (!meshBounds.isEmpty() && Number.isFinite(meshBounds.min.y)) {
-        visual.position.y -= meshBounds.min.y;
-      }
+    // Selalu pijakkan mesh ke tanah, baik model bertulang maupun model statis.
+    const meshBounds = new THREE.Box3().setFromObject(visual);
+    if (!meshBounds.isEmpty() && Number.isFinite(meshBounds.min.y)) {
+      visual.position.y -= meshBounds.min.y;
     }
 
     visual.updateMatrixWorld(true);
@@ -80,9 +92,9 @@ export class CharacterManager {
     };
   }
 
-  spawn(position) {
+  spawn(position, yaw = 0) {
     this.group?.position.copy(position);
-    if (this.group) this.group.rotation.set(0, 0, 0);
+    if (this.group) this.group.rotation.set(0, yaw, 0);
   }
 
   setVisualTuning(tuning = null) {

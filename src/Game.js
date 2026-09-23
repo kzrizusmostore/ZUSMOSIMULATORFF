@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import { AssetLoader } from './AssetLoader.js';
 import { MapManager } from './MapManager.js';
 import { CharacterManager } from './CharacterManager.js';
@@ -42,6 +43,20 @@ export class Game {
     this.fps = 60;
     this.fpsTimer = 0;
     this.frameCount = 0;
+    this.preview = {
+      enabled: false,
+      characterId: null,
+      scene: null,
+      camera: null,
+      renderer: null,
+      canvas: null,
+      host: null,
+      root: null,
+      sourceRoot: null,
+      sourceNodes: null,
+      cloneNodes: null,
+      size: new THREE.Vector2()
+    };
     this.#createLights();
     this.#bindSystemEvents();
     this.graphics.setQuality('hd');
@@ -147,12 +162,7 @@ export class Game {
       console.info(`[ZUSMO FF] Rangka terdeteksi: ${characterInfo.skeletonCount > 0}`);
       console.info(`[ZUSMO FF] Jumlah tulang: ${characterInfo.boneCount}`);
       console.info(`[ZUSMO FF] Klip animasi: ${characterInfo.animations.map((a) => a.name || '(tanpa nama)').join(', ') || 'tidak ada - animasi tulang prosedural aktif'}`);
-
-      if (characterInfo.skeletonCount < 1 || characterInfo.boneCount < 1) {
-        throw new Error(`${charDef.name} berhasil dimuat, tetapi rangka/tulang asli tidak terdeteksi.`);
-      }
-
-      this.ui.updateLoading(98, 'Menyiapkan tekstur...', totalBytes, totalBytes);
+      this.ui.updateLoading(98, characterInfo.boneCount > 0 ? 'Menyiapkan tekstur...' : 'Model statis aktif • animasi tulang terbatas...', totalBytes, totalBytes);
       await this.#nextFrame();
       const spawnConfig = this.#getSpawnConfig(mapDef);
       const spawn = this.#resolveSpawnPoint(mapDef, spawnConfig);
@@ -180,6 +190,11 @@ export class Game {
       this.input.setEnabled(true);
       this.clock.getDelta();
       this.ui.showHUD(mapDef, this.currentGraphics, this.debugEnabled);
+      if (this.preview.enabled) {
+        this.preview.characterId = charDef.id;
+        this.#mountPreviewFromCurrentCharacter();
+        this.#setPreviewVisible(true);
+      }
     } catch (error) {
       console.error('[ZUSMO FF] Kesalahan pemuatan', error);
       if (generation !== this.loadGeneration) return;
@@ -219,16 +234,6 @@ export class Game {
         return false;
       }
 
-      let boneCount = 0;
-      let skinnedCount = 0;
-      gltf.scene.traverse((obj) => {
-        if (obj.isBone) boneCount++;
-        if (obj.isSkinnedMesh) skinnedCount++;
-      });
-      if (boneCount < 1 || skinnedCount < 1) {
-        throw new Error(`${charDef.name} tidak memiliki rangka/skinned mesh yang dapat dipakai.`);
-      }
-
       if (previousGroup) this.graphics.untrackObject(previousGroup);
       const characterInfo = this.characterManager.install(charDef, gltf);
       this.graphics.trackObject(this.characterManager.group, 'character');
@@ -248,6 +253,11 @@ export class Game {
       this.currentCharacter = charDef;
       this.tuning = activeTuning;
       this.#applyTuning();
+      if (this.preview.enabled) {
+        this.preview.characterId = charDef.id;
+        this.#mountPreviewFromCurrentCharacter();
+        this.#setPreviewVisible(true);
+      }
       this.ui.updateLoading(100, `${charDef.name} siap.`, total || loaded, total || loaded);
       await this.#nextFrame();
       this.ui.hideLoading();
@@ -324,12 +334,156 @@ export class Game {
     this.animation?.setTuning(this.tuning);
   }
 
+  setTuningPreview(enabled, characterId = null) {
+    this.preview.enabled = !!enabled;
+    if (characterId) this.preview.characterId = characterId;
+    if (!enabled) {
+      this.#setPreviewVisible(false);
+      return false;
+    }
+    this.#ensurePreview();
+    if (!this.gameActive || !this.characterManager.visual) {
+      this.#setPreviewVisible(false);
+      return false;
+    }
+    this.#mountPreviewFromCurrentCharacter();
+    this.#setPreviewVisible(true);
+    return true;
+  }
+
+  setPreviewCharacter(characterId) {
+    this.preview.characterId = characterId || this.preview.characterId;
+    if (this.preview.enabled && this.gameActive && this.currentCharacter?.id === this.preview.characterId) {
+      this.#mountPreviewFromCurrentCharacter();
+      this.#setPreviewVisible(true);
+    } else if (!this.gameActive) {
+      this.#setPreviewVisible(false);
+    }
+  }
+
+  #ensurePreview() {
+    const canvas = document.getElementById('tuning-preview-canvas');
+    const host = canvas?.parentElement;
+    if (!canvas || !host) return;
+    this.preview.canvas = canvas;
+    this.preview.host = host;
+    if (!this.preview.scene) {
+      this.preview.scene = new THREE.Scene();
+      this.preview.camera = new THREE.PerspectiveCamera(26, 1, 0.01, 40);
+      this.preview.renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'high-performance' });
+      this.preview.renderer.setClearAlpha(0);
+      this.preview.renderer.outputColorSpace = THREE.SRGBColorSpace;
+      this.preview.renderer.shadowMap.enabled = false;
+      const ambient = new THREE.AmbientLight(0xffffff, 1.25);
+      const front = new THREE.DirectionalLight(0xffffff, 1.2);
+      front.position.set(0, 0.9, 3.2);
+      const rim = new THREE.DirectionalLight(0xcfe7ff, 0.55);
+      rim.position.set(1.8, 1.4, -2.1);
+      this.preview.scene.add(ambient, front, rim);
+    }
+  }
+
+  #setPreviewVisible(active) {
+    const host = this.preview.host || document.querySelector('.tuning-preview-box');
+    const empty = document.getElementById('tuning-preview-empty');
+    if (host) host.classList.toggle('has-preview', !!active);
+    if (empty) empty.textContent = active ? '' : 'Preview tampil saat game sedang aktif.';
+  }
+
+  #disposePreviewRoot() {
+    if (!this.preview.root || !this.preview.scene) return;
+    this.preview.scene.remove(this.preview.root);
+    this.preview.root.traverse((obj) => {
+      if (!obj.isMesh) return;
+      obj.geometry?.dispose?.();
+      const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+      mats.filter(Boolean).forEach((mat) => mat.dispose?.());
+    });
+    this.preview.root = null;
+    this.preview.sourceRoot = null;
+    this.preview.sourceNodes = null;
+    this.preview.cloneNodes = null;
+  }
+
+  #mountPreviewFromCurrentCharacter() {
+    if (!this.characterManager.visual) return;
+    this.#ensurePreview();
+    this.#disposePreviewRoot();
+    const source = this.characterManager.visual;
+    const cloned = cloneSkeleton(source);
+    const pivot = new THREE.Group();
+    pivot.add(cloned);
+    this.preview.scene.add(pivot);
+    this.preview.root = pivot;
+    this.preview.sourceRoot = source;
+    this.preview.sourceNodes = new Map();
+    this.preview.cloneNodes = new Map();
+    source.traverse((obj) => {
+      const key = obj.name || obj.uuid;
+      if (!this.preview.sourceNodes.has(key)) this.preview.sourceNodes.set(key, obj);
+    });
+    cloned.traverse((obj) => {
+      const key = obj.name || obj.uuid;
+      if (!this.preview.cloneNodes.has(key)) this.preview.cloneNodes.set(key, obj);
+      if (obj.isMesh) {
+        obj.castShadow = false;
+        obj.receiveShadow = false;
+      }
+    });
+
+    const bounds = new THREE.Box3().setFromObject(cloned);
+    const size = bounds.getSize(new THREE.Vector3());
+    const center = bounds.getCenter(new THREE.Vector3());
+    cloned.position.x -= center.x;
+    cloned.position.y -= bounds.min.y;
+    cloned.position.z -= center.z;
+    pivot.position.set(0, 0, 0);
+    pivot.rotation.set(0, 0, 0);
+
+    const height = Math.max(size.y || 1.7, 0.8);
+    const width = Math.max(size.x, size.z, 0.45);
+    const distance = Math.max(2.05, height * 1.08 + width * 0.85);
+    this.preview.camera.position.set(0, height * 0.56, distance);
+    this.preview.camera.lookAt(0, height * 0.56, 0);
+    this.preview.camera.updateProjectionMatrix();
+    this.#syncPreviewPose();
+  }
+
+  #syncPreviewPose() {
+    if (!this.preview.sourceNodes || !this.preview.cloneNodes) return;
+    for (const [key, source] of this.preview.sourceNodes) {
+      const target = this.preview.cloneNodes.get(key);
+      if (!target) continue;
+      target.position.copy(source.position);
+      target.quaternion.copy(source.quaternion);
+      target.scale.copy(source.scale);
+    }
+  }
+
+  #renderPreview() {
+    if (!this.preview.enabled || !this.preview.renderer || !this.preview.scene || !this.preview.camera || !this.preview.root) return;
+    this.#syncPreviewPose();
+    const host = this.preview.host;
+    if (!host) return;
+    const width = Math.max(2, Math.floor(host.clientWidth));
+    const height = Math.max(2, Math.floor(host.clientHeight));
+    if (this.preview.size.x !== width || this.preview.size.y !== height) {
+      this.preview.size.set(width, height);
+      this.preview.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+      this.preview.renderer.setSize(width, height, false);
+      this.preview.camera.aspect = width / height;
+      this.preview.camera.updateProjectionMatrix();
+    }
+    this.preview.renderer.render(this.preview.scene, this.preview.camera);
+  }
+
   exitToMenu() {
     ++this.loadGeneration;
     this.gameActive = false;
     this.input.setEnabled(false);
     this.ui.hideHUD();
     this.ui.hideLoading();
+    this.setTuningPreview(false);
     this.ui.closeTuning?.();
     this.ui.showScreen('menu');
   }
@@ -346,6 +500,7 @@ export class Game {
       this.#updateDebug(dt);
     }
     this.graphics.render(this.scene, this.camera);
+    this.#renderPreview();
   }
 
   #updateSun() {
@@ -399,6 +554,8 @@ Klip: ${this.characterManager.animations.length}`
     this.collision.setMap(null, new THREE.Box3());
     this.controller = null;
     this.animation = null;
+    this.#disposePreviewRoot();
+    this.#setPreviewVisible(false);
   }
 
   #bindSystemEvents() {
