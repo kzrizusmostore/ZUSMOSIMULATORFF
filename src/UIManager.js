@@ -59,14 +59,14 @@ const DEFAULT_TUNING = {
 };
 
 const FILTER_CONTROLS = [
-  ['Brightness', 'brightness', 0.55, 1.55, 0.01, '×'],
-  ['Contrast', 'contrast', 0.55, 1.55, 0.01, '×'],
-  ['Saturation', 'saturation', 0.00, 2.00, 0.01, '×'],
-  ['Sharpen', 'sharpness', 0.00, 1.00, 0.01, '%'],
-  ['Shadows', 'shadows', -0.60, 0.80, 0.01, ''],
-  ['Highlights', 'highlights', -0.60, 0.80, 0.01, ''],
+  ['Kecerahan', 'brightness', 0.55, 1.55, 0.01, '×'],
+  ['Kontras', 'contrast', 0.55, 1.55, 0.01, '×'],
+  ['Saturasi', 'saturation', 0.00, 2.00, 0.01, '×'],
+  ['Ketajaman', 'sharpness', 0.00, 1.00, 0.01, '%'],
+  ['Bayangan', 'shadows', -0.60, 0.80, 0.01, ''],
+  ['Sorotan', 'highlights', -0.60, 0.80, 0.01, ''],
   ['Gamma', 'gamma', 0.65, 1.50, 0.01, ''],
-  ['Warmth', 'warmth', -1.00, 1.00, 0.01, '']
+  ['Kehangatan', 'warmth', -1.00, 1.00, 0.01, '']
 ];
 
 export class UIManager {
@@ -136,7 +136,7 @@ export class UIManager {
     this.lastTotal = totalBytes;
     this.loading.classList.remove('hidden');
     this.error.classList.add('hidden');
-    this.updateLoading(0, 'Starting real asset load...', 0, totalBytes);
+    this.updateLoading(0, 'Mulai memuat aset asli...', 0, totalBytes);
   }
 
   updateLoading(percent, status, loadedBytes = 0, totalBytes = this.lastTotal || 0) {
@@ -175,7 +175,7 @@ export class UIManager {
     this.#renderTuningControls();
     this.tuningOverlay.classList.remove('hidden');
     this.#applySavedTunePosition();
-    this.#setSaveState('LIVE');
+    this.#setSaveState('LANGSUNG');
   }
 
   closeTuning() { this.tuningOverlay.classList.add('hidden'); }
@@ -342,7 +342,7 @@ export class UIManager {
       try { await screen.orientation?.lock?.('landscape'); } catch (_) {}
       return true;
     } catch (error) {
-      console.warn('[ZUSMO FF] Fullscreen unavailable', error);
+      console.warn('[ZUSMO FF] Layar penuh tidak tersedia', error);
       return false;
     }
   }
@@ -350,9 +350,9 @@ export class UIManager {
   #syncFullscreenButtons() {
     const active = !!(document.fullscreenElement || document.webkitFullscreenElement);
     document.querySelectorAll('.fullscreen-btn').forEach((button) => {
-      button.textContent = active ? 'EXIT FULLSCREEN' : (button.closest('#screen-menu') ? 'FULLSCREEN' : 'ENTER FULLSCREEN');
+      button.textContent = active ? 'KELUAR LAYAR PENUH' : (button.closest('#screen-menu') ? 'LAYAR PENUH' : 'MASUK LAYAR PENUH');
     });
-    document.querySelectorAll('.hud-fullscreen').forEach((button) => { button.textContent = active ? 'WINDOW' : 'FULL'; });
+    document.querySelectorAll('.hud-fullscreen').forEach((button) => { button.textContent = active ? 'JENDELA' : 'PENUH'; });
   }
 
   setQuality(_mode = 'hd') {
@@ -375,84 +375,84 @@ export class UIManager {
     const range = mapDef?.spawnRange || { xMin: -250, xMax: 250, yMin: -10, yMax: 160, zMin: -250, zMax: 250 };
     return [
       {
-        id: 'movement', label: 'MOVE', title: 'MOVEMENT', subtitle: 'Atur kecepatan dan rasa controller.',
+        id: 'movement', label: 'GERAK', title: 'GERAKAN', subtitle: 'Atur kecepatan dan respons kontrol karakter.',
         controls: [
-          ['Walk Speed', 'movement.walkSpeed', 2.5, 6.0, 0.05, ' m/s'],
-          ['Run Speed', 'movement.runSpeed', 4.5, 9.0, 0.05, ' m/s'],
-          ['Crouch Speed', 'movement.crouchSpeed', 0.6, 3.0, 0.05, ' m/s'],
-          ['Prone Speed', 'movement.proneSpeed', 0.3, 1.6, 0.05, ' m/s'],
-          ['Acceleration', 'movement.acceleration', 5, 25, 0.5, ''],
-          ['Deceleration', 'movement.deceleration', 5, 28, 0.5, ''],
-          ['Turn Speed', 'movement.turnSpeed', 5, 24, 0.5, ''],
-          ['Jump Power', 'movement.jumpPower', 3.2, 8.0, 0.05, ''],
-          ['Gravity', 'movement.gravity', 12, 34, 0.5, '']
+          ['Kecepatan Jalan', 'movement.walkSpeed', 2.5, 6.0, 0.05, ' m/s'],
+          ['Kecepatan Lari', 'movement.runSpeed', 4.5, 9.0, 0.05, ' m/s'],
+          ['Kecepatan Jongkok', 'movement.crouchSpeed', 0.6, 3.0, 0.05, ' m/s'],
+          ['Kecepatan Tiarap', 'movement.proneSpeed', 0.3, 1.6, 0.05, ' m/s'],
+          ['Akselerasi', 'movement.acceleration', 5, 25, 0.5, ''],
+          ['Perlambatan', 'movement.deceleration', 5, 28, 0.5, ''],
+          ['Kecepatan Berputar', 'movement.turnSpeed', 5, 24, 0.5, ''],
+          ['Kekuatan Lompat', 'movement.jumpPower', 3.2, 8.0, 0.05, ''],
+          ['Gravitasi', 'movement.gravity', 12, 34, 0.5, '']
         ]
       },
       {
-        id: 'animation', label: 'ANIM', title: 'ANIMATION', subtitle: 'Atur gerak skeleton Naruto secara live.',
+        id: 'animation', label: 'ANIMASI', title: 'ANIMASI', subtitle: 'Atur gerakan skeleton Naruto secara langsung.',
         controls: [
-          ['Motion Intensity', 'animation.intensity', 0.55, 1.70, 0.01, '×'],
-          ['Walk Stride', 'animation.walkStride', 0.55, 1.65, 0.01, '×'],
-          ['Run Stride', 'animation.runStride', 0.55, 1.55, 0.01, '×'],
-          ['Arm Swing', 'animation.armSwing', 0.50, 1.75, 0.01, '×'],
-          ['Knee Lift', 'animation.kneeLift', 0.50, 1.75, 0.01, '×'],
-          ['Body Bob', 'animation.bodyBob', 0.00, 1.70, 0.01, '×'],
-          ['Hip Sway', 'animation.hipSway', 0.00, 1.70, 0.01, '×'],
-          ['Cadence', 'animation.cadence', 0.65, 1.45, 0.01, '×'],
-          ['Blend / Smooth', 'animation.blend', 0.55, 1.80, 0.01, '×'],
-          ['Run Lean', 'animation.lean', 0.30, 1.60, 0.01, '×']
+          ['Intensitas Gerak', 'animation.intensity', 0.55, 1.70, 0.01, '×'],
+          ['Langkah Jalan', 'animation.walkStride', 0.55, 1.65, 0.01, '×'],
+          ['Langkah Lari', 'animation.runStride', 0.55, 1.55, 0.01, '×'],
+          ['Ayunan Tangan', 'animation.armSwing', 0.50, 1.75, 0.01, '×'],
+          ['Angkat Lutut', 'animation.kneeLift', 0.50, 1.75, 0.01, '×'],
+          ['Naik Turun Badan', 'animation.bodyBob', 0.00, 1.70, 0.01, '×'],
+          ['Ayunan Pinggul', 'animation.hipSway', 0.00, 1.70, 0.01, '×'],
+          ['Irama Langkah', 'animation.cadence', 0.65, 1.45, 0.01, '×'],
+          ['Kehalusan Transisi', 'animation.blend', 0.55, 1.80, 0.01, '×'],
+          ['Condong Saat Lari', 'animation.lean', 0.30, 1.60, 0.01, '×']
         ]
       },
       {
-        id: 'idle', label: 'IDLE', title: 'IDLE / STOP POSE', subtitle: 'Atur posisi tangan dan badan saat Naruto berhenti. Nilai Arm Down 0 = kembali mendekati T-pose.',
+        id: 'idle', label: 'DIAM', title: 'POSE SAAT DIAM', subtitle: 'Atur posisi tangan dan badan saat Naruto berhenti. Nilai Tangan Turun 0 akan mendekati T-pose.',
         controls: [
-          ['Arm Down', 'animation.idleArmDown', 0.00, 1.45, 0.01, ' rad'],
-          ['Elbow Bend', 'animation.idleElbowBend', 0.00, 0.80, 0.01, ' rad'],
-          ['Arm Twist', 'animation.idleArmTwist', -0.40, 0.40, 0.01, ' rad'],
-          ['Shoulder Relax', 'animation.idleShoulderRelax', 0.00, 0.30, 0.01, '×'],
-          ['Hand Relax', 'animation.idleHandRelax', 0.00, 0.45, 0.01, '×'],
-          ['Breathing', 'animation.idleBreathing', 0.00, 1.80, 0.01, '×'],
-          ['Head Micro Motion', 'animation.idleHeadMotion', 0.00, 1.80, 0.01, '×']
+          ['Tangan Turun', 'animation.idleArmDown', 0.00, 1.45, 0.01, ' rad'],
+          ['Tekuk Siku', 'animation.idleElbowBend', 0.00, 0.80, 0.01, ' rad'],
+          ['Putar Lengan', 'animation.idleArmTwist', -0.40, 0.40, 0.01, ' rad'],
+          ['Rileks Bahu', 'animation.idleShoulderRelax', 0.00, 0.30, 0.01, '×'],
+          ['Rileks Tangan', 'animation.idleHandRelax', 0.00, 0.45, 0.01, '×'],
+          ['Napas', 'animation.idleBreathing', 0.00, 1.80, 0.01, '×'],
+          ['Gerak Halus Kepala', 'animation.idleHeadMotion', 0.00, 1.80, 0.01, '×']
         ]
       },
       {
-        id: 'character', label: 'SIZE/GROUND', title: 'CHARACTER SIZE & GROUND', subtitle: 'Sesuaikan ukuran Naruto dan posisi telapak kaki terhadap permukaan map.',
+        id: 'character', label: 'UKURAN/TANAH', title: 'UKURAN KARAKTER & TANAH', subtitle: 'Sesuaikan ukuran Naruto dan posisi telapak kaki terhadap permukaan map.',
         controls: [
-          ['Character Size', 'character.scale', 0.70, 1.35, 0.01, '×'],
-          ['Foot Ground Offset', 'character.footOffset', -0.25, 0.25, 0.005, ' m'],
-          ['Physics Ground Offset', 'grounding.groundOffset', -0.08, 0.16, 0.002, ' m'],
-          ['Ground Snap Distance', 'grounding.snapDistance', 0.10, 1.40, 0.02, ' m'],
-          ['Landing Snap Range', 'grounding.landingDistance', 0.05, 0.55, 0.01, ' m'],
-          ['Ground Probe Depth', 'grounding.probeDistance', 3.0, 14.0, 0.25, ' m']
+          ['Ukuran Karakter', 'character.scale', 0.70, 1.35, 0.01, '×'],
+          ['Offset Telapak Kaki', 'character.footOffset', -0.25, 0.25, 0.005, ' m'],
+          ['Offset Fisika Tanah', 'grounding.groundOffset', -0.08, 0.16, 0.002, ' m'],
+          ['Jarak Menempel Tanah', 'grounding.snapDistance', 0.10, 1.40, 0.02, ' m'],
+          ['Jarak Menempel Saat Mendarat', 'grounding.landingDistance', 0.05, 0.55, 0.01, ' m'],
+          ['Kedalaman Deteksi Tanah', 'grounding.probeDistance', 3.0, 14.0, 0.25, ' m']
         ]
       },
       {
-        id: 'spawn', label: 'SPAWN', title: `MAP SPAWN • ${mapDef?.shortName || 'MAP'}`, subtitle: `Spawn disimpan khusus untuk ${mapDef?.name || 'map ini'}. X/Y/Z memilih lokasi; Y dipakai untuk memilih lantai/permukaan map yang paling dekat.`,
+        id: 'spawn', label: 'SPAWN', title: `SPAWN MAP • ${mapDef?.shortName || 'MAP'}`, subtitle: `Spawn disimpan khusus untuk ${mapDef?.name || 'map ini'}. X/Y/Z memilih lokasi; Y dipakai untuk memilih lantai/permukaan map yang paling dekat.`,
         controls: [
           ['Spawn X', `${spawnPath}.x`, range.xMin, range.xMax, 0.25, ' m'],
-          ['Spawn Y / Floor', `${spawnPath}.y`, range.yMin, range.yMax, 0.25, ' m'],
+          ['Spawn Y / Lantai', `${spawnPath}.y`, range.yMin, range.yMax, 0.25, ' m'],
           ['Spawn Z', `${spawnPath}.z`, range.zMin, range.zMax, 0.25, ' m'],
-          ['Facing', `${spawnPath}.yaw`, -180, 180, 1, '°']
+          ['Arah Hadap', `${spawnPath}.yaw`, -180, 180, 1, '°']
         ],
         mapId: mapDef?.id,
         spawn
       },
       {
-        id: 'world', label: 'LIGHT', title: 'WORLD LIGHTING', subtitle: 'Atur pencahayaan dunia secara live.',
+        id: 'world', label: 'CAHAYA', title: 'PENCAHAYAAN DUNIA', subtitle: 'Atur pencahayaan dunia secara langsung.',
         controls: [
-          ['Exposure', `${profile}.exposure`, 0.65, 1.65, 0.01, ''],
-          ['Hemisphere', `${profile}.lighting.hemisphere`, 0.0, 3.0, 0.01, ''],
-          ['Ambient', `${profile}.lighting.ambient`, 0.0, 1.5, 0.01, ''],
-          ['Sun', `${profile}.lighting.sun`, 0.0, 4.0, 0.01, ''],
-          ['Fill Light', `${profile}.lighting.fill`, 0.0, 2.5, 0.01, '']
+          ['Eksposur', `${profile}.exposure`, 0.65, 1.65, 0.01, ''],
+          ['Cahaya Langit', `${profile}.lighting.hemisphere`, 0.0, 3.0, 0.01, ''],
+          ['Cahaya Sekitar', `${profile}.lighting.ambient`, 0.0, 1.5, 0.01, ''],
+          ['Matahari', `${profile}.lighting.sun`, 0.0, 4.0, 0.01, ''],
+          ['Cahaya Pengisi', `${profile}.lighting.fill`, 0.0, 2.5, 0.01, '']
         ]
       },
       {
-        id: 'map', label: 'MAP', title: 'MAP FILTER', subtitle: `Filter ${mapDef?.name || 'map'} secara live.`,
+        id: 'map', label: 'MAP', title: 'FILTER MAP', subtitle: `Atur filter ${mapDef?.name || 'map'} secara langsung.`,
         controls: FILTER_CONTROLS.map((c) => [c[0], `${profile}.map.${c[1]}`, ...c.slice(2)])
       },
       {
-        id: 'charfilter', label: 'CHAR', title: 'CHARACTER FILTER', subtitle: `Filter ${charDef?.name || 'character'} secara live.`,
+        id: 'charfilter', label: 'KARAKTER', title: 'FILTER KARAKTER', subtitle: `Atur filter ${charDef?.name || 'karakter'} secara langsung.`,
         controls: FILTER_CONTROLS.map((c) => [c[0], `${profile}.character.${c[1]}`, ...c.slice(2)])
       }
     ];
@@ -493,7 +493,7 @@ export class UIManager {
   #makeGroup(title, subtitle, controls) {
     const group = document.createElement('section');
     group.className = 'tune-group';
-    group.innerHTML = `<div class="tune-group-head"><div><b>${title}</b><small>${subtitle}</small></div><span>LIVE</span></div>`;
+    group.innerHTML = `<div class="tune-group-head"><div><b>${title}</b><small>${subtitle}</small></div><span>LANGSUNG</span></div>`;
     const list = document.createElement('div');
     list.className = 'slider-list';
 
@@ -513,10 +513,10 @@ export class UIManager {
         <div class="setting-line">
           <span class="slider-label">${label}</span>
           <div class="manual-value">
-            <button type="button" class="value-step" data-dir="-1" aria-label="Decrease ${label}">−</button>
-            <input class="value-number" data-setting-path="${path}" type="number" inputmode="decimal" min="${displayMin}" max="${displayMax}" step="${displayStep}" value="${formatDisplay(displayInitial)}" aria-label="${label} manual value">
+            <button type="button" class="value-step" data-dir="-1" aria-label="Kurangi ${label}">−</button>
+            <input class="value-number" data-setting-path="${path}" type="number" inputmode="decimal" min="${displayMin}" max="${displayMax}" step="${displayStep}" value="${formatDisplay(displayInitial)}" aria-label="Nilai manual ${label}">
             <span class="value-unit">${isPercent ? '%' : (suffix || '').trim()}</span>
-            <button type="button" class="value-step" data-dir="1" aria-label="Increase ${label}">+</button>
+            <button type="button" class="value-step" data-dir="1" aria-label="Tambah ${label}">+</button>
           </div>
         </div>
         <div class="setting-slider" role="slider" tabindex="0"
@@ -544,7 +544,7 @@ export class UIManager {
         this.#saveTuning();
         this.handlers.tuning?.(this.#clone(this.tuning));
         this.updateHUDQuality(this.graphics);
-        this.#setSaveState('LIVE • TERSIMPAN', 850);
+        this.#setSaveState('LANGSUNG • TERSIMPAN', 850);
       };
 
       this.#setSliderValue(slider, initial);
@@ -708,13 +708,13 @@ export class UIManager {
   async #copyTuningSettings() {
     const payload = {
       type: 'ZUSMO_FF_TUNE',
-      version: 15,
+      version: 16,
       map: this.selectedMap,
       character: this.selectedCharacter,
-      graphics: 'HD_FIXED',
+      graphics: 'HD_TETAP',
       tuning: this.#clone(this.tuning)
     };
-    const text = `ZUSMO FF TUNE V15\n${JSON.stringify(payload, null, 2)}`;
+    const text = `ZUSMO FF PENGATURAN V16\n${JSON.stringify(payload, null, 2)}`;
     let copied = false;
 
     try {
@@ -723,7 +723,7 @@ export class UIManager {
         copied = true;
       }
     } catch (error) {
-      console.warn('[ZUSMO FF] Clipboard API failed, using fallback.', error);
+      console.warn('[ZUSMO FF] Clipboard API gagal, memakai cadangan.', error);
     }
 
     if (!copied) {
@@ -739,7 +739,7 @@ export class UIManager {
         textarea.setSelectionRange(0, textarea.value.length);
         copied = document.execCommand('copy') === true;
       } catch (error) {
-        console.warn('[ZUSMO FF] execCommand copy fallback failed.', error);
+        console.warn('[ZUSMO FF] Cadangan salin execCommand gagal.', error);
       }
       textarea.remove();
       try { active?.focus?.({ preventScroll: true }); } catch (_) {}
@@ -747,7 +747,7 @@ export class UIManager {
 
     if (!copied) {
       this.#showCopyFallback(text);
-      this.#setSaveState('PILIH + COPY MANUAL', 2200);
+      this.#setSaveState('PILIH + SALIN MANUAL', 2200);
       return;
     }
     this.#setSaveState('TERSALIN • KIRIM KE CHAT', 1800);
@@ -761,8 +761,8 @@ export class UIManager {
       box.className = 'copy-fallback';
       box.innerHTML = `
         <div class="copy-fallback-card">
-          <div class="copy-fallback-head"><b>COPY SETTINGS</b><button type="button" aria-label="Close">×</button></div>
-          <small>Clipboard browser diblokir. Teks sudah dipilih; tekan lama lalu Copy.</small>
+          <div class="copy-fallback-head"><b>SALIN PENGATURAN</b><button type="button" aria-label="Tutup">×</button></div>
+          <small>Clipboard browser diblokir. Teks sudah dipilih; tekan lama lalu pilih Salin.</small>
           <textarea spellcheck="false"></textarea>
         </div>`;
       document.body.appendChild(box);
@@ -783,10 +783,10 @@ export class UIManager {
     actions.className = 'spawn-tools auto-spawn-tools';
     actions.innerHTML = `
       <div class="spawn-tools-head">
-        <b>AUTO SPAWN FOLLOW</b>
+        <b>SPAWN OTOMATIS MENGIKUTI</b>
         <span id="spawn-live-note">Posisi spawn mengikuti karakter secara otomatis saat bergerak.</span>
       </div>
-      <div class="spawn-live-pill"><i></i><span>LIVE • MAP ${mapId || '-'}</span></div>`;
+      <div class="spawn-live-pill"><i></i><span>LANGSUNG • MAP ${mapId || '-'}</span></div>`;
     group.appendChild(actions);
   }
 
@@ -886,7 +886,7 @@ export class UIManager {
     if (this.saveStateTimer) clearTimeout(this.saveStateTimer);
     if (resetAfter > 0) {
       this.saveStateTimer = setTimeout(() => {
-        el.textContent = 'LIVE';
+        el.textContent = 'LANGSUNG';
         el.classList.remove('saved');
       }, resetAfter);
     }
@@ -898,7 +898,7 @@ export class UIManager {
     for (const c of this.characters) {
       const el = document.createElement('button');
       el.className = 'select-card';
-      el.innerHTML = `<span class="status">${c.available ? 'AVAILABLE' : 'LOCKED'}</span><span class="code">N</span><b>${c.name}</b><small>Original rig / skeleton</small>`;
+      el.innerHTML = `<span class="status">${c.available ? 'TERSEDIA' : 'TERKUNCI'}</span><span class="code">N</span><b>${c.name}</b><small>Rig / skeleton asli</small>`;
       el.disabled = !c.available;
       el.addEventListener('click', () => { this.selectedCharacter = c.id; localStorage.setItem('zusmoff_character', c.id); this.#renderCards(); });
       el.classList.toggle('selected', this.selectedCharacter === c.id);
@@ -910,7 +910,7 @@ export class UIManager {
     for (const m of this.maps) {
       const el = document.createElement('button');
       el.className = 'select-card';
-      el.innerHTML = `<span class="status">${m.available ? 'AVAILABLE' : 'LOCKED'}</span><span class="code">${m.shortName}</span><b>${m.name}</b><small>${m.shortName} • Original GLB map</small>`;
+      el.innerHTML = `<span class="status">${m.available ? 'TERSEDIA' : 'TERKUNCI'}</span><span class="code">${m.shortName}</span><b>${m.name}</b><small>${m.shortName} • Map GLB asli</small>`;
       el.disabled = !m.available;
       el.addEventListener('click', () => {
         this.selectedMap = m.id;

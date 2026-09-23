@@ -85,7 +85,7 @@ export class Game {
     const mapDef = this.maps.find((x) => x.id === selection.mapId && x.available);
     const charDef = this.characters.find((x) => x.id === selection.characterId && x.available);
     if (!mapDef || !charDef) {
-      this.ui.showError('Selected map or character is not available.');
+      this.ui.showError('Map atau karakter yang dipilih tidak tersedia.');
       return;
     }
 
@@ -124,7 +124,7 @@ export class Game {
         this.scene.fog.near = mapDef.environment.fogNear || 120;
         this.scene.fog.far = mapDef.environment.fogFar || 300;
       }
-      this.ui.updateLoading(total ? (mapLoaded / total) * 92 : 0, 'Clock Tower ready. Loading Naruto...', mapLoaded, total);
+      this.ui.updateLoading(total ? (mapLoaded / total) * 92 : 0, 'Clock Tower siap. Memuat Naruto...', mapLoaded, total);
 
       const charGltf = await this.assetLoader.loadGLB(charDef, (p) => {
         charLoaded = Math.min(charDef.bytes || p.total || p.loaded, p.loaded);
@@ -132,7 +132,7 @@ export class Game {
       });
       if (generation !== this.loadGeneration) return;
       charLoaded = charDef.bytes;
-      this.ui.updateLoading(94, 'Preparing Skeleton...', total, total);
+      this.ui.updateLoading(94, 'Menyiapkan skeleton...', total, total);
       await this.#nextFrame();
 
       const characterInfo = this.characterManager.install(charDef, charGltf);
@@ -143,10 +143,10 @@ export class Game {
       console.info(`[ZUSMO FF] Animation clips: ${characterInfo.animations.map((a) => a.name || '(unnamed)').join(', ') || 'none - procedural bone animation active'}`);
 
       if (characterInfo.skeletonCount < 1 || characterInfo.boneCount < 1) {
-        throw new Error('Naruto loaded but no original skeleton/bones were detected.');
+        throw new Error('Naruto berhasil dimuat, tetapi skeleton/bone asli tidak terdeteksi.');
       }
 
-      this.ui.updateLoading(98, 'Preparing Textures...', total, total);
+      this.ui.updateLoading(98, 'Menyiapkan tekstur...', total, total);
       await this.#nextFrame();
       const spawnConfig = this.#getSpawnConfig(mapDef);
       const spawn = this.#resolveSpawnPoint(mapDef, spawnConfig);
@@ -166,7 +166,7 @@ export class Game {
       );
       this.cameraRig.reset(spawn, spawnYaw, { stance: 'standing', grounded: true, speed: 0, scale: this.controller?.characterScale || 0.71 });
       this.#applyTuning();
-      this.ui.updateLoading(100, 'Entering World...', total, total);
+      this.ui.updateLoading(100, 'Memasuki dunia...', total, total);
       await this.#nextFrame();
       if (generation !== this.loadGeneration) return;
 
@@ -343,7 +343,7 @@ Clips: ${this.characterManager.animations.length}`
       e.preventDefault();
       this.gameActive = false;
       this.input.setEnabled(false);
-      this.ui.showError('WebGL context was lost. Press Retry after the browser recovers, or reload the page.');
+      this.ui.showError('Konteks WebGL terputus. Tekan Coba Lagi setelah browser pulih, atau muat ulang halaman.');
     });
     this.graphics.resize(innerWidth, innerHeight);
   }
