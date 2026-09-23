@@ -710,7 +710,7 @@ button,input,#joystick,#camera-zone{ -webkit-touch-callout:none; }
     right:auto!important;bottom:auto!important;
   }
 }
-.menu-shell::after{content:"V11"!important}
+.menu-shell::after{content:"V17"!important}
 /* Critical Android gesture fix: touch-action is intersected through ancestors.
    Ancestors must allow pan-y or the scroll container cannot scroll natively. */
 .tuning-overlay,.tuning-panel{touch-action:pan-y!important}
@@ -736,7 +736,7 @@ button,input,#joystick,#camera-zone{ -webkit-touch-callout:none; }
   }
 }
 .value-step{touch-action:none!important;-webkit-touch-callout:none!important}
-.menu-shell::after{content:"V13"!important}
+.menu-shell::after{content:"V17"!important}
 
 /* V14 Free Fire reference control cluster */
 .actions{width:258px;height:182px}

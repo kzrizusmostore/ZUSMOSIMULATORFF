@@ -19,7 +19,7 @@
   </script>
 </head>
 <body>
-  <canvas id="game-canvas" aria-label="Kanvas game ZUSMO FF"></canvas>
+  <canvas id="game-canvas" aria-label="Kanvas permainan ZUSMO FF"></canvas>
 
   <div id="engine-boot" class="overlay boot-overlay">
     <div class="brand brand-xl">ZUSMO <b>FF</b></div>
@@ -30,10 +30,10 @@
   <main id="ui-root" class="hidden">
     <section id="screen-menu" class="screen active">
       <div class="menu-shell glass">
-        <div class="eyebrow">SIMULATOR GERAK 3D MOBILE</div>
+        <div class="eyebrow">SIMULATOR GERAK 3D PONSEL</div>
         <div class="brand brand-hero">ZUSMO <b>FF</b></div>
-        <div class="menu-meta" aria-label="Fitur game">
-          <span>RIG ASLI</span><span>PENGATURAN LANGSUNG</span><span>SPAWN PER MAP</span>
+        <div class="menu-meta" aria-label="Fitur permainan">
+          <span>RANGKA ASLI</span><span>PENGATURAN LANGSUNG</span><span>TITIK MUNCUL PER PETA</span>
         </div>
         <div class="menu-actions">
           <button id="btn-play" class="btn primary">MAIN</button>
@@ -48,7 +48,7 @@
       <div class="panel wide glass">
         <div class="panel-head">
           <button class="icon-btn" data-back="menu" aria-label="Kembali">‹</button>
-          <div><div class="eyebrow">RUANG PERSIAPAN</div><h1>PILIH KARAKTER & MAP</h1></div>
+          <div><div class="eyebrow">RUANG PERSIAPAN</div><h1>PILIH KARAKTER & PETA</h1></div>
         </div>
         <div class="select-grid">
           <div>
@@ -56,13 +56,13 @@
             <div id="character-list" class="card-list"></div>
           </div>
           <div>
-            <h2>MAP</h2>
+            <h2>PETA</h2>
             <div id="map-list" class="card-list"></div>
           </div>
         </div>
         <div class="select-actions">
-          <button class="btn ghost" data-open-tuning>ATUR CEPAT</button>
-          <button id="btn-start" class="btn primary">MULAI GAME</button>
+          <button class="btn ghost" data-open-tuning>BUKA PENGATURAN</button>
+          <button id="btn-start" class="btn primary">MULAI PERMAINAN</button>
         </div>
       </div>
     </section>
@@ -75,13 +75,13 @@
         </div>
         <div class="setting-block">
           <span>PENGATURAN LANJUTAN</span>
-          <button class="btn primary full" data-open-tuning>ATUR CEPAT</button>
-          <p>Atur filter, pencahayaan, kecepatan, pose diam, ukuran/posisi tanah, dan spawn khusus setiap map. Nilai disimpan otomatis.</p>
+          <button class="btn primary full" data-open-tuning>BUKA PENGATURAN</button>
+          <p>Atur filter, pencahayaan, kecepatan, pose diam, ukuran/posisi tanah, dan titik muncul khusus setiap peta. Nilai disimpan otomatis.</p>
         </div>
         <div class="setting-block">
           <span>TAMPILAN</span>
           <button class="btn ghost full fullscreen-btn" data-fullscreen>MASUK LAYAR PENUH</button>
-          <p>Layar penuh menyembunyikan bilah browser jika Android mengizinkan. Saat game dimulai, layar penuh juga akan dicoba otomatis.</p>
+          <p>Layar penuh menyembunyikan bilah peramban jika Android mengizinkan. Saat permainan dimulai, layar penuh juga akan dicoba otomatis.</p>
         </div>
       </div>
     </section>
@@ -107,7 +107,7 @@
       </div>
     </section>
 
-    <section id="tuning-overlay" class="overlay tuning-overlay hidden" aria-label="Pengaturan langsung game">
+    <section id="tuning-overlay" class="overlay tuning-overlay hidden" aria-label="Pengaturan langsung permainan">
       <div class="tuning-panel glass">
         <div class="tuning-head">
           <div class="tuning-title-wrap">
